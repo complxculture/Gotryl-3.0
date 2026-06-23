@@ -1,0 +1,16 @@
+[build]
+builder = "DOCKERFILE"
+
+[[services]]
+name = "api"
+dockerfile = "infra/Dockerfile.api"
+healthcheckPath = "/v1/health"
+healthcheckTimeout = 10
+
+[[services]]
+name = "executor"
+dockerfile = "infra/Dockerfile.executor"
+
+[[services]]
+name = "dashboard"
+dockerfile = "infra/Dockerfile.dashboard"

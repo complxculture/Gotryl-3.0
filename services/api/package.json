@@ -1,0 +1,29 @@
+{
+  "name": "@gotryl/api",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "fastify": "^4",
+    "@fastify/env": "^4",
+    "pino": "^8",
+    "drizzle-orm": "^0.30",
+    "postgres": "^3",
+    "nanoid": "^5",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "tsx": "^4",
+    "drizzle-kit": "^0.21",
+    "@types/node": "^20"
+  }
+}

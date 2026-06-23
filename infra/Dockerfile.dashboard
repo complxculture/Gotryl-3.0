@@ -1,0 +1,20 @@
+FROM node:20-slim AS base
+RUN npm install -g pnpm@9
+
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml ./
+COPY services/dashboard/package.json services/dashboard/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+COPY . .
+RUN pnpm --filter @gotryl/dashboard build
+
+FROM node:20-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/services/dashboard/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+EXPOSE 3000
+CMD ["node_modules/.bin/next", "start"]

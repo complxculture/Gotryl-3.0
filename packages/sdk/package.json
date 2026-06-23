@@ -1,0 +1,10 @@
+{
+  "name": "@gotryl/sdk",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "license": "Apache-2.0",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

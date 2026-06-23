@@ -1,0 +1,13 @@
+{
+  "name": "@gotryl/mcp",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@gotryl/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
