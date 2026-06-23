@@ -62,9 +62,7 @@ class TestsResource {
 class RunsResource {
   constructor(private req: RequestFn) {}
 
-  // Returns a dispatch receipt { runId, status } per Story 2.3 AC — the server mints the ID
-  // and returns it immediately before execution starts; this is not the full Run entity.
-  create(body: { testId: string; targetUrl: string }): Promise<{ runId: string; status: RunStatus }> {
+  create(body: { testId: string; targetUrl: string; runId?: string }): Promise<Run> {
     return this.req('POST', '/v1/runs', body);
   }
 

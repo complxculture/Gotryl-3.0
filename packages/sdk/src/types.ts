@@ -22,11 +22,16 @@ export interface Test {
 export interface Run {
   id: string;
   testId: string;
-  status: RunStatus;
+  accountId: string;
   targetUrl: string;
+  status: RunStatus;
   durationMs: number | null;
+  stdout: string | null;
+  stderr: string | null;
+  error: string | null;
   completedAt: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface FailureBundle {
