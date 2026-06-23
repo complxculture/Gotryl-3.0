@@ -1,0 +1,155 @@
+import { z } from 'zod';
+import type { FastifyPluginAsync } from 'fastify';
+import { db } from '../db/client.js';
+import { projects, tests } from '../db/schema.js';
+import { eq, and } from 'drizzle-orm';
+
+const DescriptionField = z.string().trim().min(1).max(2000);
+const CreateTestBody = z.object({
+  projectId: z.string().min(1),
+  description: DescriptionField,
+});
+const CreateBatchBody = z.object({
+  projectId: z.string().min(1),
+  tests: z.array(z.object({ description: DescriptionField })).min(1).max(100),
+});
+const UpdateTestBody = z.object({ description: DescriptionField });
+
+export const testsRoute: FastifyPluginAsync = async (app) => {
+  app.post('/v1/tests', async (request, reply) => {
+    const parsed = CreateTestBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Invalid request body' },
+      });
+    }
+    const { projectId, description } = parsed.data;
+    try {
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.accountId, request.account.accountId)))
+        .limit(1);
+      if (!project) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+      }
+      const [inserted] = await db
+        .insert(tests)
+        .values({ projectId, accountId: request.account.accountId, description })
+        .returning();
+      return reply.code(201).send(inserted);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
+  app.post('/v1/tests/batch', async (request, reply) => {
+    const parsed = CreateBatchBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Invalid request body' },
+      });
+    }
+    const { projectId, tests: testItems } = parsed.data;
+    try {
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.accountId, request.account.accountId)))
+        .limit(1);
+      if (!project) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+      }
+      const rows = await db
+        .insert(tests)
+        .values(testItems.map(t => ({ projectId, accountId: request.account.accountId, description: t.description })))
+        .returning();
+      return reply.code(201).send(rows);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
+  app.get('/v1/tests', async (request, reply) => {
+    const rawProjectId = (request.query as Record<string, unknown>)['projectId'];
+    const projectId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId;
+    if (!projectId || typeof projectId !== 'string') {
+      return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'projectId query parameter is required' } });
+    }
+    try {
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.accountId, request.account.accountId)))
+        .limit(1);
+      if (!project) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+      }
+      const rows = await db
+        .select()
+        .from(tests)
+        .where(and(eq(tests.projectId, projectId), eq(tests.accountId, request.account.accountId)));
+      return reply.send(rows);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
+  app.get('/v1/tests/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const [test] = await db
+        .select()
+        .from(tests)
+        .where(and(eq(tests.id, id), eq(tests.accountId, request.account.accountId)))
+        .limit(1);
+      if (!test) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Test not found' } });
+      }
+      return reply.send(test);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
+  app.patch('/v1/tests/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = UpdateTestBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Invalid request body' },
+      });
+    }
+    const { description } = parsed.data;
+    try {
+      const [updated] = await db
+        .update(tests)
+        .set({ description, updatedAt: new Date() })
+        .where(and(eq(tests.id, id), eq(tests.accountId, request.account.accountId)))
+        .returning();
+      if (!updated) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Test not found' } });
+      }
+      return reply.send(updated);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
+  app.delete('/v1/tests/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const [deleted] = await db
+        .delete(tests)
+        .where(and(eq(tests.id, id), eq(tests.accountId, request.account.accountId)))
+        .returning();
+      if (!deleted) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Test not found' } });
+      }
+      request.log.info({ event: 'test.deleted', testId: id, accountId: request.account.accountId });
+      return reply.code(204).send();
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+};

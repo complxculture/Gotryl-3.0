@@ -53,6 +53,10 @@ class TestsResource {
   delete(id: string): Promise<void> {
     return this.req('DELETE', `/v1/tests/${id}`);
   }
+
+  createBatch(body: { projectId: string; tests: Array<{ description: string }> }): Promise<Test[]> {
+    return this.req('POST', '/v1/tests/batch', body);
+  }
 }
 
 class RunsResource {

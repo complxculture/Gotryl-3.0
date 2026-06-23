@@ -11,6 +11,7 @@ export interface Project {
 export interface Test {
   id: string;
   projectId: string;
+  accountId: string;
   description: string;
   generatedCode: string | null;
   status: string;

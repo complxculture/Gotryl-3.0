@@ -18,3 +18,17 @@ export const projects = pgTable('projects', {
 }, (t) => ({
   accountIdIdx: index('projects_account_id_idx').on(t.accountId),
 }));
+
+export const tests = pgTable('tests', {
+  id: text('id').primaryKey().$defaultFn(() => `tst_${nanoid(16)}`),
+  projectId: text('project_id').notNull(),
+  accountId: text('account_id').notNull(),
+  description: text('description').notNull(),
+  generatedCode: text('generated_code'),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  projectIdIdx: index('tests_project_id_idx').on(t.projectId),
+  accountIdIdx: index('tests_account_id_idx').on(t.accountId),
+}));

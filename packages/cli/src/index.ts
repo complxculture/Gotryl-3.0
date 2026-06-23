@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { registerSetupCommand } from './commands/setup.js';
 import { registerAuthCommand } from './commands/auth.js';
 import { registerProjectCommand } from './commands/project.js';
+import { registerTestCommand } from './commands/test.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
@@ -17,13 +18,7 @@ program
 registerSetupCommand(program);
 registerAuthCommand(program);
 registerProjectCommand(program);
-
-program
-  .command('test')
-  .description('Create, run, and manage tests')
-  .action(() => {
-    console.log('Not yet implemented. Run gotryl test --help for usage.');
-  });
+registerTestCommand(program);
 
 program
   .command('agent')
