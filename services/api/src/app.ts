@@ -1,10 +1,16 @@
 import Fastify from 'fastify';
 import { healthRoute } from './routes/health.js';
+import { authRoute } from './routes/auth.js';
+import { authenticate } from './plugins/authenticate.js';
 import { sql } from './db/client.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
+
+  app.addHook('onRequest', authenticate);
+
   await app.register(healthRoute);
+  await app.register(authRoute);
 
   app.addHook('onClose', async () => {
     await sql.end();
