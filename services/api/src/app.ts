@@ -5,6 +5,10 @@ import { authenticate } from './plugins/authenticate.js';
 import { sql } from './db/client.js';
 
 export async function buildApp() {
+  if (!process.env.INTERNAL_SERVICE_SECRET) {
+    throw new Error('INTERNAL_SERVICE_SECRET is required');
+  }
+
   const app = Fastify({ logger: true });
 
   app.addHook('onRequest', authenticate);

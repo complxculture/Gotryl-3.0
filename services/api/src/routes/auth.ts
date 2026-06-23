@@ -12,7 +12,8 @@ const CreateKeyBody = z.object({
 
 export const authRoute: FastifyPluginAsync = async (app) => {
   app.post('/v1/auth/keys', async (request, reply) => {
-    if (request.headers['x-internal-secret'] !== process.env.INTERNAL_SERVICE_SECRET) {
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!secret || request.headers['x-internal-secret'] !== secret) {
       return reply.code(403).send({
         error: { code: 'FORBIDDEN', message: 'Invalid or missing internal secret' },
       });
@@ -33,6 +34,12 @@ export const authRoute: FastifyPluginAsync = async (app) => {
       .insert(apiKeys)
       .values({ accountId, email, keyHash })
       .returning();
+
+    if (!inserted) {
+      return reply.code(500).send({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to create API key' },
+      });
+    }
 
     return reply.code(201).send({
       id: inserted.id,
