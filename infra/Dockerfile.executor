@@ -1,2 +1,31 @@
 FROM python:3.12-slim
-CMD ["echo", "Executor stub"]
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY services/executor/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN playwright install chromium && playwright install-deps chromium
+
+COPY services/executor/ .
+
+ENV PORT=8000
+EXPOSE 8000
+
+CMD ["python", "main.py"]
