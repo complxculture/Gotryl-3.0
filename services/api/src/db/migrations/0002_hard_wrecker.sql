@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "projects_account_id_idx" ON "projects" ("account_id");
