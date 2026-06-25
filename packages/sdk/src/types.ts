@@ -29,6 +29,7 @@ export interface Run {
   stdout: string | null;
   stderr: string | null;
   error: string | null;
+  snapshotId: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;

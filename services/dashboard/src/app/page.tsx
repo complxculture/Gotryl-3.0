@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Gotryl Dashboard</div>;
+import { redirect } from 'next/navigation';
+
+export default function Home() {
+  redirect('/projects');
 }

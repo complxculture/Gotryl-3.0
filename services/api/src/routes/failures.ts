@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/client.js';
 import { runs, tests } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
-import { fetchFailureBundle } from '../lib/r2.js';
+import { fetchFailureBundle, streamR2Object } from '../lib/r2.js';
 
 export const failuresRoute: FastifyPluginAsync = async (app) => {
   // GET /v1/failures/:testId — full bundle for the latest failed run of a test
@@ -99,5 +99,35 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
     }
 
     return reply.send(bundle);
+  });
+
+  // GET /v1/artifacts/:runId/video/:filename — proxy video from R2
+  app.get('/v1/artifacts/:runId/video/:filename', async (request, reply) => {
+    const { runId, filename } = request.params as { runId: string; filename: string };
+    const accountId = request.account.accountId;
+
+    // Sanitize filename (only allow .webm files with safe names)
+    if (!/^[\w-]+\.webm$/.test(filename)) {
+      return reply.code(400).send({ error: { code: 'INVALID_FILENAME', message: 'Invalid filename' } });
+    }
+
+    const [run] = await db
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.id, runId), eq(runs.accountId, accountId)))
+      .limit(1);
+
+    if (!run) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Run not found' } });
+    }
+
+    const stream = await streamR2Object(`runs/${runId}/${filename}`);
+    if (!stream) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Video not available' } });
+    }
+
+    reply.header('Content-Type', stream.contentType);
+    reply.header('Cache-Control', 'public, max-age=3600');
+    return reply.send(stream.body);
   });
 };

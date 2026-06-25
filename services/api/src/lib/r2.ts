@@ -32,3 +32,18 @@ export async function fetchJsonFromR2(key: string): Promise<Record<string, unkno
 export async function fetchFailureBundle(runId: string): Promise<Record<string, unknown> | null> {
   return fetchJsonFromR2(`runs/${runId}/failure-bundle.json`);
 }
+
+export async function streamR2Object(key: string): Promise<{ body: AsyncIterable<Uint8Array>; contentType: string } | null> {
+  if (!isR2Configured()) return null;
+  try {
+    const resp = await makeR2Client().send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET ?? '',
+      Key: key,
+    }));
+    if (!resp.Body) return null;
+    const contentType = resp.ContentType ?? 'application/octet-stream';
+    return { body: resp.Body as AsyncIterable<Uint8Array>, contentType };
+  } catch {
+    return null;
+  }
+}
