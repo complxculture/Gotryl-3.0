@@ -4,6 +4,7 @@ import { authRoute } from './routes/auth.js';
 import { projectsRoute } from './routes/projects.js';
 import { testsRoute } from './routes/tests.js';
 import { runsRoute } from './routes/runs.js';
+import { failuresRoute } from './routes/failures.js';
 import { authenticate } from './plugins/authenticate.js';
 import { sql } from './db/client.js';
 import { startRunWorker } from './queue/worker.js';
@@ -28,6 +29,7 @@ export async function buildApp() {
   await app.register(projectsRoute);
   await app.register(testsRoute);
   await app.register(runsRoute);
+  await app.register(failuresRoute);
 
   const worker = startRunWorker();
 

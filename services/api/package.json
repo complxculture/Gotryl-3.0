@@ -12,19 +12,20 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "fastify": "^4",
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@fastify/env": "^4",
-    "pino": "^8",
+    "bullmq": "^5",
     "drizzle-orm": "^0.30",
-    "postgres": "^3",
+    "fastify": "^4",
     "nanoid": "^5",
-    "zod": "^3",
-    "bullmq": "^5"
+    "pino": "^8",
+    "postgres": "^3",
+    "zod": "^3"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "tsx": "^4",
+    "@types/node": "^20",
     "drizzle-kit": "^0.21",
-    "@types/node": "^20"
+    "tsx": "^4",
+    "typescript": "^5"
   }
 }

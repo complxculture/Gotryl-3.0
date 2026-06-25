@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Command as CommandType } from 'commander';
 import { Command } from 'commander';
 import { GotrylError, type Run } from '@gotryl/sdk';
@@ -374,6 +375,104 @@ export function registerTestCommand(program: CommandType): void {
         process.exit(1);
       }
     });
+
+  // ── gotryl test failure get <testId> ─────────────────────────────────────────
+  const failureCommand = new Command('failure').description('Retrieve failure bundles');
+
+  failureCommand
+    .command('get <testId>')
+    .description('Fetch the full failure bundle for the latest failed run of a test')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (testId: string, opts: { output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      if (opts.dryRun) {
+        printResult({ snapshotId: 'snap_dryrun0000000000', failingStep: { lineNo: 0, actionType: 'unknown', selector: '' }, screenshotUrls: [], domSnapshot: '', neighboringSteps: [], testSource: '', rootCauseHypothesis: null, fixTarget: null }, format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const bundle = await client.failures.get(testId);
+        if (format === 'json') {
+          printResult(bundle, format);
+        } else {
+          console.log(`Snapshot:  ${bundle.snapshotId}`);
+          console.log(`Failing line: ${bundle.failingStep.lineNo}`);
+          console.log(`Screenshots: ${bundle.screenshotUrls.length}`);
+          console.log(`Root cause: ${bundle.rootCauseHypothesis ?? '(not yet analyzed)'}`);
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+        else { printError('INTERNAL_ERROR', String(err), format); }
+        process.exit(1);
+      }
+    });
+
+  failureCommand
+    .command('summary <testId>')
+    .description('Fetch compact triage summary for the latest failed run of a test')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (testId: string, opts: { output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      if (opts.dryRun) {
+        printResult({ rootCauseHypothesis: null, fixTarget: null, failingStep: { lineNo: 0, actionType: 'unknown', selector: '' } }, format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const summary = await client.failures.getSummary(testId);
+        if (format === 'json') {
+          printResult(summary, format);
+        } else {
+          console.log(`Failing line:  ${(summary.failingStep as { lineNo: number } | null)?.lineNo ?? 'unknown'}`);
+          console.log(`Root cause:    ${summary.rootCauseHypothesis ?? '(not yet analyzed)'}`);
+          console.log(`Fix target:    ${JSON.stringify(summary.fixTarget)}`);
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+        else { printError('INTERNAL_ERROR', String(err), format); }
+        process.exit(1);
+      }
+    });
+
+  testCommand.addCommand(failureCommand);
+
+  // ── gotryl test artifact get <runId> ─────────────────────────────────────────
+  const artifactCommand = new Command('artifact').description('Download run artifacts');
+
+  artifactCommand
+    .command('get <runId>')
+    .description('Download the full failure bundle for a run')
+    .option('--out <dir>', 'Directory to write bundle files (defaults to ./)')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (runId: string, opts: { out?: string; output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      const outDir = opts.out ?? '.';
+      if (opts.dryRun) {
+        printResult({ dryRun: true, runId, outDir }, format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const bundle = await client.failures.getArtifacts(runId);
+        mkdirSync(outDir, { recursive: true });
+        const dest = join(outDir, 'failure-bundle.json');
+        writeFileSync(dest, JSON.stringify(bundle, null, 2));
+        if (format === 'json') {
+          printResult({ runId, path: dest }, format);
+        } else {
+          console.log(`Bundle written to ${dest}`);
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+        else { printError('INTERNAL_ERROR', String(err), format); }
+        process.exit(1);
+      }
+    });
+
+  testCommand.addCommand(artifactCommand);
 
   program.addCommand(testCommand);
 }
