@@ -159,10 +159,20 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                 try:
                     from .bundler import assemble_failure_bundle
                     from .r2 import upload_failure_bundle
+                    from .analyzer import analyze_failure
                     bundle = assemble_failure_bundle(
                         run_id, artifacts_dir, test_code, stdout, stderr
                     )
                     snapshot_id = bundle['snapshotId']
+                    analysis = analyze_failure(
+                        test_source=bundle.get('testSource', ''),
+                        stdout=stdout,
+                        stderr=stderr,
+                        failing_line_no=bundle.get('failingStep', {}).get('lineNo', 0),
+                        dom_snapshot=bundle.get('domSnapshot', ''),
+                    )
+                    if analysis:
+                        bundle.update(analysis)
                     upload_failure_bundle(run_id, bundle)
                 except Exception as exc:
                     logger.warning('Failure bundle assembly error for run %s: %s', run_id, exc)
