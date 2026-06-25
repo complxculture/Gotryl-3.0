@@ -12,15 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Pin to a commit SHA in production: actions/checkout@<sha>
       - uses: actions/checkout@v4
 
       - name: Set up Node.js
+        # Pin to a commit SHA in production: actions/setup-node@<sha>
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install Gotryl CLI
-        run: npm install -g @gotryl/cli
+        run: npm install -g @gotryl/cli@0.1.0
 
       - name: Configure Gotryl
         run: gotryl setup --from-env --yes
@@ -31,8 +33,8 @@ jobs:
         id: run_tests
         run: |
           gotryl test run \
-            --project ${{ vars.GOTRYL_PROJECT_ID }} \
-            --target-url ${{ vars.GOTRYL_TARGET_URL }} \
+            --project "${{ vars.GOTRYL_PROJECT_ID }}" \
+            --target-url "${{ vars.GOTRYL_TARGET_URL }}" \
             --wait \
             --output json > gotryl-results.json
         env:
@@ -41,33 +43,38 @@ jobs:
 
       - name: Upload test results
         if: always()
+        # Pin to a commit SHA in production: actions/upload-artifact@<sha>
         uses: actions/upload-artifact@v4
         with:
           name: gotryl-results
           path: gotryl-results.json
 
       - name: Download failure bundles
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.run_tests.conclusion == 'failure'
         run: |
           mkdir -p .gotryl/failures
-          # Extract failed test IDs from results and download bundles
+          if [ ! -f gotryl-results.json ]; then
+            echo "gotryl-results.json not found — CLI may have crashed before writing output" >&2
+            exit 1
+          fi
+          # Use null-delimited output to prevent newline injection from API-returned IDs
           node -e "
             const r = JSON.parse(require('fs').readFileSync('gotryl-results.json', 'utf8'));
             const failed = (r.results || []).filter(x => x.status !== 'passed').map(x => x.testId);
-            console.log(failed.join('\n'));
-          " | while read testId; do
+            process.stdout.write(failed.join('\0'));
+          " | while IFS= read -r -d '' testId; do
             gotryl test failure get "$testId" --out .gotryl/failures --output json
           done
         env:
           GOTRYL_API_KEY: ${{ secrets.GOTRYL_API_KEY }}
 
       - name: Upload failure bundles
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.run_tests.conclusion == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: gotryl-failure-bundles
           path: .gotryl/failures/
 
       - name: Fail if tests failed
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.run_tests.conclusion == 'failure'
         run: exit 1
