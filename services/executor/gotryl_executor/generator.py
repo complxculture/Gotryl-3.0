@@ -27,7 +27,7 @@ def generate_test_code(description: str, target_url: str, sequence: int = 1) -> 
                 f'BEHAVIOR: {description}\n'
                 f'TARGET URL: {target_url}\n\n'
                 'REQUIREMENTS:\n'
-                '- Import: `import os, pytest`\n'
+                '- Import: `import os, pytest` and `from playwright.async_api import expect`\n'
                 f'- Get URL: `TARGET_URL = os.environ.get("TARGET_URL", "{target_url}")`\n'
                 '- Use `_gotryl_page` as the fixture parameter name (NOT `page`) — '
                 'it is injected by the test runner conftest with video recording\n'

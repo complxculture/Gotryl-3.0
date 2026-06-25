@@ -69,8 +69,8 @@ export function startRunWorker(): Worker<RunJobData> {
             .update(tests)
             .set({ generatedCode: execResult.generatedCode, updatedAt: new Date() })
             .where(eq(tests.id, testId));
-        } catch {
-          // non-fatal: run result takes priority
+        } catch (err) {
+          console.warn('Failed to persist generated code for test %s — next run will regenerate: %s', testId, err);
         }
       }
 
