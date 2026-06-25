@@ -43,6 +43,7 @@ export function startRunWorker(): Worker<RunJobData> {
             'x-internal-secret': process.env.INTERNAL_SERVICE_SECRET ?? '',
           },
           body: JSON.stringify({ runId, testCode: testCode ?? '', targetUrl }),
+          signal: AbortSignal.timeout(130_000),
         });
 
         if (!resp.ok) {
@@ -58,14 +59,19 @@ export function startRunWorker(): Worker<RunJobData> {
         return;
       }
 
+      const VALID_TERMINAL_STATUSES = ['passed', 'failed', 'error'] as const;
+      const terminalStatus = VALID_TERMINAL_STATUSES.includes(execResult.status as typeof VALID_TERMINAL_STATUSES[number])
+        ? execResult.status
+        : 'error';
+
       await db
         .update(runs)
         .set({
-          status: execResult.status,
+          status: terminalStatus,
           durationMs: execResult.durationMs,
           stdout: execResult.stdout,
           stderr: execResult.stderr,
-          error: execResult.error ?? null,
+          error: execResult.error ?? (terminalStatus !== execResult.status ? `Executor returned unknown status: ${execResult.status}` : null),
           updatedAt: new Date(),
           completedAt: new Date(),
         })

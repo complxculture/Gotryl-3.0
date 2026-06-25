@@ -35,7 +35,7 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
         const [existing] = await db
           .select()
           .from(runs)
-          .where(and(eq(runs.id, clientRunId), eq(runs.accountId, request.account.accountId)))
+          .where(and(eq(runs.id, clientRunId), eq(runs.accountId, request.account.accountId), eq(runs.testId, testId)))
           .limit(1);
         if (existing) return reply.send(existing);
       }
@@ -45,7 +45,12 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
         .values({ testId, accountId: request.account.accountId, targetUrl })
         .returning();
 
-      await runQueue.add('execute', { runId: run.id, testCode: test.generatedCode, targetUrl }, { jobId: run.id });
+      try {
+        await runQueue.add('execute', { runId: run.id, testCode: test.generatedCode, targetUrl }, { jobId: run.id });
+      } catch (queueErr) {
+        await db.delete(runs).where(eq(runs.id, run.id));
+        throw queueErr;
+      }
 
       return reply.code(201).send(run);
     } catch {
