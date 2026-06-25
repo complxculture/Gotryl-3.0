@@ -3,6 +3,8 @@ dist
 .env
 *.js.map
 .DS_Store
+__pycache__/
+*.pyc
 
 # BMad tooling (project management layer — not Gotryl source)
 _bmad/
