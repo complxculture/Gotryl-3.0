@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/client.js';
 import { runs, tests } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { runQueue } from '../queue/client.js';
 
 const PRIVATE_IP_RE =
@@ -92,7 +92,8 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
       const rows = await db
         .select()
         .from(runs)
-        .where(and(eq(runs.testId, testId), eq(runs.accountId, request.account.accountId)));
+        .where(and(eq(runs.testId, testId), eq(runs.accountId, request.account.accountId)))
+        .orderBy(desc(runs.createdAt));
       return reply.send(rows);
     } catch {
       return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });

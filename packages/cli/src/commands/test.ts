@@ -12,10 +12,13 @@ async function pollUntilDone(
   client: ReturnType<typeof getClient>,
   runId: string,
   intervalMs = 2000,
+  maxWaitMs = 600_000,
 ): Promise<Run> {
+  const deadline = Date.now() + maxWaitMs;
   while (true) {
     const run = await client.runs.get(runId);
     if (TERMINAL_STATUSES.has(run.status)) return run;
+    if (Date.now() >= deadline) throw new GotrylError(408, { error: { code: 'TIMEOUT', message: `Run ${runId} did not complete within ${maxWaitMs / 1000}s` } });
     await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
   }
 }
