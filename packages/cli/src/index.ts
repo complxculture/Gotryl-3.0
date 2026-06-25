@@ -4,6 +4,7 @@ import { registerSetupCommand } from './commands/setup.js';
 import { registerAuthCommand } from './commands/auth.js';
 import { registerProjectCommand } from './commands/project.js';
 import { registerTestCommand } from './commands/test.js';
+import { registerAgentCommand } from './commands/agent.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
@@ -19,10 +20,4 @@ registerSetupCommand(program);
 registerAuthCommand(program);
 registerProjectCommand(program);
 registerTestCommand(program);
-
-program
-  .command('agent')
-  .description('Install Gotryl agent skills into your coding agent')
-  .action(() => {
-    console.log('Not yet implemented. Run gotryl agent --help for usage.');
-  });
+registerAgentCommand(program);

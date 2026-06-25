@@ -33,6 +33,16 @@ export const tests = pgTable('tests', {
   accountIdIdx: index('tests_account_id_idx').on(t.accountId),
 }));
 
+export const testDeletions = pgTable('test_deletions', {
+  id: text('id').primaryKey().$defaultFn(() => `tdel_${nanoid(16)}`),
+  accountId: text('account_id').notNull(),
+  testId: text('test_id').notNull(),
+  timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
+  reason: text('reason'),
+}, (t) => ({
+  accountIdIdx: index('test_deletions_account_id_idx').on(t.accountId),
+}));
+
 export const runs = pgTable('runs', {
   id: text('id').primaryKey().$defaultFn(() => `run_${nanoid(16)}`),
   testId: text('test_id').notNull(),

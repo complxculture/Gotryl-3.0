@@ -138,21 +138,13 @@ export const testsRoute: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.delete('/v1/tests/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    try {
-      const [deleted] = await db
-        .delete(tests)
-        .where(and(eq(tests.id, id), eq(tests.accountId, request.account.accountId)))
-        .returning();
-      if (!deleted) {
-        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Test not found' } });
-      }
-      request.log.info({ event: 'test.deleted', testId: id, accountId: request.account.accountId });
-      return reply.code(204).send();
-    } catch {
-      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
-    }
+  app.delete('/v1/tests/:id', async (_request, reply) => {
+    return reply.code(403).send({ error: { code: 'ADMIN_ONLY', message: 'Test deletion requires admin credentials. Use DELETE /v1/admin/tests/:id with x-internal-secret header.' } });
+  });
+
+  // Bulk delete is not supported — tests are permanent
+  app.delete('/v1/projects/:projectId/tests', async (_request, reply) => {
+    return reply.code(405).send({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Bulk test deletion is not supported. Tests are permanent.' } });
   });
 
   // GET /v1/tests/:id/code — return generated source with ETag

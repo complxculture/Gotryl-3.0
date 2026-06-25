@@ -29,6 +29,10 @@ class ProjectsResource {
   update(id: string, body: { name: string }): Promise<Project> {
     return this.req('PATCH', `/v1/projects/${id}`, body);
   }
+
+  getCoverage(id: string): Promise<{ testCount: number; lastRunAt: string | null; passRate: number | null }> {
+    return this.req('GET', `/v1/projects/${id}/coverage`);
+  }
 }
 
 class TestsResource {
