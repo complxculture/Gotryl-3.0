@@ -1,13 +1,26 @@
 {
   "name": "@gotryl/mcp",
   "version": "0.1.0",
+  "description": "Gotryl MCP Server — cloud Playwright testing tools for AI coding agents",
   "main": "dist/index.js",
+  "bin": {
+    "gotryl-mcp": "dist/index.js"
+  },
   "license": "Apache-2.0",
   "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
   "dependencies": {
-    "@gotryl/sdk": "workspace:*"
+    "@gotryl/sdk": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "localtunnel": "^2.0.2",
+    "open": "^11.0.0"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "@types/localtunnel": "^2.0.4",
+    "@types/node": "^20",
+    "typescript": "^5.9.3"
   }
 }
