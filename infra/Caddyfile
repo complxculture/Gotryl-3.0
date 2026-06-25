@@ -1,7 +1,7 @@
-{$DOMAIN} {
+http://{$DOMAIN} {
     reverse_proxy dashboard:3000
 }
 
-api.{$DOMAIN} {
+http://api.{$DOMAIN} {
     reverse_proxy api:3001
 }
