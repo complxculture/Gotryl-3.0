@@ -5,9 +5,23 @@ import { runs, tests } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { runQueue } from '../queue/client.js';
 
+const PRIVATE_IP_RE =
+  /^(localhost|0\.0\.0\.0|127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$|\[::1\]|fe80:|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:)/i;
+
+function isPrivateUrl(rawUrl: string): boolean {
+  try {
+    const { hostname } = new URL(rawUrl);
+    return PRIVATE_IP_RE.test(hostname);
+  } catch {
+    return true;
+  }
+}
+
 const CreateRunBody = z.object({
   testId: z.string().min(1),
-  targetUrl: z.string().url(),
+  targetUrl: z.string().url().refine((u) => u.startsWith('https://'), {
+    message: 'Target URL must use HTTPS',
+  }),
   runId: z.string().optional(),
 });
 
@@ -20,6 +34,12 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
       });
     }
     const { testId, targetUrl, runId: clientRunId } = parsed.data;
+
+    if (isPrivateUrl(targetUrl)) {
+      return reply.code(400).send({
+        error: { code: 'INVALID_TARGET_URL', message: 'Target URL must not resolve to a private or loopback address' },
+      });
+    }
 
     try {
       const [test] = await db
@@ -38,6 +58,12 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
           .where(and(eq(runs.id, clientRunId), eq(runs.accountId, request.account.accountId), eq(runs.testId, testId)))
           .limit(1);
         if (existing) return reply.send(existing);
+      }
+
+      if (!test.generatedCode) {
+        return reply.code(409).send({
+          error: { code: 'TEST_NOT_READY', message: 'Test has no generated code. Run AI generation first.' },
+        });
       }
 
       const [run] = await db

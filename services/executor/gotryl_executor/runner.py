@@ -7,8 +7,72 @@ import time
 
 logger = logging.getLogger(__name__)
 
+CONFTEST_TEMPLATE = '''\
+import os
+import pytest
 
-def run_test(test_code: str, target_url: str) -> dict:
+_ARTIFACTS_DIR = os.environ.get('GOTRYL_ARTIFACTS_DIR', '')
+_step_counter = {'n': 0}
+
+
+@pytest.fixture
+async def _gotryl_page():
+    """Gotryl-injected page fixture: records video, captures screenshot+DOM per test."""
+    if not _ARTIFACTS_DIR:
+        from playwright.async_api import async_playwright
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch()
+            ctx = await browser.new_context()
+            p = await ctx.new_page()
+            yield p
+            await ctx.close()
+            await browser.close()
+        return
+
+    from playwright.async_api import async_playwright
+
+    idx = _step_counter['n']
+    _step_counter['n'] += 1
+
+    video_dir = os.path.join(_ARTIFACTS_DIR, 'videos')
+    os.makedirs(video_dir, exist_ok=True)
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch()
+        ctx = await browser.new_context(record_video_dir=video_dir)
+        p = await ctx.new_page()
+
+        yield p
+
+        step_dir = os.path.join(_ARTIFACTS_DIR, 'steps', str(idx))
+        os.makedirs(step_dir, exist_ok=True)
+        try:
+            await p.screenshot(path=os.path.join(step_dir, 'screenshot.png'))
+        except Exception:
+            pass
+        try:
+            with open(os.path.join(step_dir, 'dom.html'), 'w', encoding='utf-8') as fh:
+                fh.write(await p.content())
+        except Exception:
+            pass
+
+        video_path = None
+        try:
+            video_path = await p.video.path()
+        except Exception:
+            pass
+
+        await ctx.close()
+        await browser.close()
+
+        if video_path and os.path.exists(video_path):
+            import shutil
+            dest = os.path.join(_ARTIFACTS_DIR, f'video_{idx}.webm')
+            shutil.move(video_path, dest)
+'''
+
+
+def run_test(run_id: str, test_code: str, target_url: str) -> dict:
     """Execute a Python Playwright test file and return a structured result."""
     start_ms = int(time.time() * 1000)
 
@@ -17,7 +81,14 @@ def run_test(test_code: str, target_url: str) -> dict:
         with open(test_file, 'w') as f:
             f.write(test_code)
 
-        env = {**os.environ, 'TARGET_URL': target_url}
+        conftest_file = os.path.join(tmpdir, 'conftest.py')
+        with open(conftest_file, 'w') as f:
+            f.write(CONFTEST_TEMPLATE)
+
+        artifacts_dir = os.path.join(tmpdir, 'artifacts')
+        os.makedirs(artifacts_dir, exist_ok=True)
+
+        env = {**os.environ, 'TARGET_URL': target_url, 'GOTRYL_ARTIFACTS_DIR': artifacts_dir}
 
         try:
             proc = subprocess.Popen(
@@ -59,6 +130,13 @@ def run_test(test_code: str, target_url: str) -> dict:
                 status = 'error'
 
             logger.debug('pytest exit=%d duration=%dms', returncode, duration_ms)
+
+            try:
+                from .r2 import upload_run_artifacts
+                upload_run_artifacts(run_id, artifacts_dir)
+            except Exception as exc:
+                logger.warning('Artifact upload error for run %s: %s', run_id, exc)
+
             return {
                 'status': status,
                 'steps': [],
