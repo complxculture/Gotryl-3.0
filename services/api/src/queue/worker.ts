@@ -2,11 +2,13 @@ import { Worker, type Job } from 'bullmq';
 import { connection } from './client.js';
 
 import { db } from '../db/client.js';
-import { runs } from '../db/schema.js';
+import { runs, tests } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export interface RunJobData {
   runId: string;
+  testId: string;
+  testDescription: string;
   testCode: string | null;
   targetUrl: string;
 }
@@ -17,6 +19,7 @@ interface ExecutorResult {
   stdout: string;
   stderr: string;
   error?: string;
+  generatedCode?: string;
 }
 
 export function startRunWorker(): Worker<RunJobData> {
@@ -26,7 +29,7 @@ export function startRunWorker(): Worker<RunJobData> {
   const worker = new Worker<RunJobData>(
     'gotryl:runs',
     async (job: Job<RunJobData>) => {
-      const { runId, testCode, targetUrl } = job.data;
+      const { runId, testId, testDescription, testCode, targetUrl } = job.data;
 
       await db
         .update(runs)
@@ -42,7 +45,7 @@ export function startRunWorker(): Worker<RunJobData> {
             'Content-Type': 'application/json',
             'x-internal-secret': process.env.INTERNAL_SERVICE_SECRET ?? '',
           },
-          body: JSON.stringify({ runId, testCode: testCode ?? '', targetUrl }),
+          body: JSON.stringify({ runId, testCode: testCode ?? null, testDescription, targetUrl }),
           signal: AbortSignal.timeout(130_000),
         });
 
@@ -57,6 +60,17 @@ export function startRunWorker(): Worker<RunJobData> {
           .set({ status: 'error', error: String(err), updatedAt: new Date(), completedAt: new Date() })
           .where(eq(runs.id, runId));
         return;
+      }
+
+      if (execResult.generatedCode) {
+        try {
+          await db
+            .update(tests)
+            .set({ generatedCode: execResult.generatedCode, updatedAt: new Date() })
+            .where(eq(tests.id, testId));
+        } catch {
+          // non-fatal: run result takes priority
+        }
       }
 
       const VALID_TERMINAL_STATUSES = ['passed', 'failed', 'error'] as const;

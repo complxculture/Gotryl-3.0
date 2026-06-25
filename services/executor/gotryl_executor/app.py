@@ -26,7 +26,8 @@ if _missing_r2:
 
 class ExecuteRequest(BaseModel):
     runId: str
-    testCode: str
+    testCode: Optional[str] = None
+    testDescription: str = ''
     targetUrl: str
 
 
@@ -44,7 +45,7 @@ async def execute(
         raise HTTPException(status_code=401, detail='Unauthorized')
 
     logger.info('Starting execution: runId=%s targetUrl=%s', body.runId, body.targetUrl)
-    result = await asyncio.to_thread(run_test, body.runId, body.testCode, body.targetUrl)
+    result = await asyncio.to_thread(run_test, body.runId, body.testCode, body.testDescription, body.targetUrl)
     logger.info(
         'Execution complete: runId=%s status=%s durationMs=%s',
         body.runId,

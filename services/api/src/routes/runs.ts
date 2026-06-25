@@ -60,19 +60,17 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
         if (existing) return reply.send(existing);
       }
 
-      if (!test.generatedCode) {
-        return reply.code(409).send({
-          error: { code: 'TEST_NOT_READY', message: 'Test has no generated code. Run AI generation first.' },
-        });
-      }
-
       const [run] = await db
         .insert(runs)
         .values({ testId, accountId: request.account.accountId, targetUrl })
         .returning();
 
       try {
-        await runQueue.add('execute', { runId: run.id, testCode: test.generatedCode, targetUrl }, { jobId: run.id });
+        await runQueue.add(
+          'execute',
+          { runId: run.id, testId, testDescription: test.description, testCode: test.generatedCode, targetUrl },
+          { jobId: run.id },
+        );
       } catch (queueErr) {
         await db.delete(runs).where(eq(runs.id, run.id));
         throw queueErr;

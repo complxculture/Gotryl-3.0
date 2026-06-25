@@ -72,9 +72,26 @@ async def _gotryl_page():
 '''
 
 
-def run_test(run_id: str, test_code: str, target_url: str) -> dict:
+def run_test(run_id: str, test_code: str | None, test_description: str, target_url: str) -> dict:
     """Execute a Python Playwright test file and return a structured result."""
     start_ms = int(time.time() * 1000)
+    generated_code = None
+
+    if not test_code:
+        try:
+            from .generator import generate_test_code
+            test_code = generate_test_code(test_description, target_url, sequence=1)
+            generated_code = test_code
+        except Exception as e:
+            logger.error('Code generation failed for run %s: %s', run_id, e)
+            return {
+                'status': 'error',
+                'steps': [],
+                'durationMs': int(time.time() * 1000) - start_ms,
+                'error': f'Code generation failed: {e}',
+                'stdout': '',
+                'stderr': '',
+            }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         test_file = os.path.join(tmpdir, 'test_run.py')
@@ -137,13 +154,16 @@ def run_test(run_id: str, test_code: str, target_url: str) -> dict:
             except Exception as exc:
                 logger.warning('Artifact upload error for run %s: %s', run_id, exc)
 
-            return {
+            result = {
                 'status': status,
                 'steps': [],
                 'durationMs': duration_ms,
                 'stdout': stdout,
                 'stderr': stderr,
             }
+            if generated_code is not None:
+                result['generatedCode'] = generated_code
+            return result
         except Exception as e:
             duration_ms = int(time.time() * 1000) - start_ms
             logger.error('Unexpected runner error: %s', e)
