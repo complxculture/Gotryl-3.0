@@ -15,6 +15,10 @@ FROM deps AS builder
 COPY . .
 RUN pnpm --filter @gotryl/api build
 
+FROM builder AS migrate
+WORKDIR /app
+CMD ["pnpm", "--filter", "@gotryl/api", "db:migrate"]
+
 FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
