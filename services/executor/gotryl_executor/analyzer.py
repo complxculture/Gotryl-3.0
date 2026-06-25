@@ -67,7 +67,9 @@ If you cannot determine a fixTarget, set it to null."""
         raw = response.content[0].text.strip()
         # Strip accidental markdown fences
         if raw.startswith('```'):
-            raw = raw.split('\n', 1)[1].rsplit('```', 1)[0].strip()
+            parts = raw.split('\n', 1)
+            if len(parts) > 1:
+                raw = parts[1].rsplit('```', 1)[0].strip()
         return json.loads(raw)
     except Exception as exc:
         logger.warning('Failure analysis error: %s', exc)

@@ -34,7 +34,7 @@ export const adminRoute: FastifyPluginAsync = async (app) => {
       reason,
     });
 
-    request.log.info({ event: 'admin.test.deleted', testId: id, accountId, reason });
+    request.log.info({ event: 'admin.test.deleted', testId: id, accountId: deleted.accountId, reason });
     return reply.code(204).send();
   });
 };

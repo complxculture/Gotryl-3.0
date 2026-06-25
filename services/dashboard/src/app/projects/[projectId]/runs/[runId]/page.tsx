@@ -57,8 +57,8 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         ))}
       </div>
 
-      {/* Video player */}
-      {run.status === 'passed' || run.status === 'failed' ? (
+      {/* Video player — only shown for failed runs that have a bundle */}
+      {run.status === 'failed' && run.snapshotId ? (
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>Recording</h2>
           <video

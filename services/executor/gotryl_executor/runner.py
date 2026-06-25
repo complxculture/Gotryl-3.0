@@ -163,7 +163,7 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                     bundle = assemble_failure_bundle(
                         run_id, artifacts_dir, test_code, stdout, stderr
                     )
-                    snapshot_id = bundle['snapshotId']
+                    minted_id = bundle['snapshotId']
                     analysis = analyze_failure(
                         test_source=bundle.get('testSource', ''),
                         stdout=stdout,
@@ -174,6 +174,8 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                     if analysis:
                         bundle.update(analysis)
                     upload_failure_bundle(run_id, bundle)
+                    # Only expose snapshotId after upload succeeds
+                    snapshot_id = minted_id
                 except Exception as exc:
                     logger.warning('Failure bundle assembly error for run %s: %s', run_id, exc)
 

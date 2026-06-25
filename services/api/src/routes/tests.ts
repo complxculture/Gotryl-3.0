@@ -189,7 +189,7 @@ export const testsRoute: FastifyPluginAsync = async (app) => {
 
     const currentEtag = test.generatedCode
       ? `"${createHash('sha256').update(test.generatedCode).digest('hex')}"`
-      : '"empty"';
+      : `"${createHash('sha256').update('').digest('hex')}"`;
 
     if (ifMatch !== currentEtag) {
       return reply.code(412).send({ error: { code: 'PRECONDITION_FAILED', message: 'Test code has changed. Fetch the latest and retry.' } });

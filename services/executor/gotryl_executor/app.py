@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title='Gotryl Executor', version='0.1.0')
 
 _SECRET = os.environ.get('INTERNAL_SERVICE_SECRET', '')
-if not _SECRET:
+if not _SECRET.strip():
     raise RuntimeError(
         'INTERNAL_SERVICE_SECRET env var is required — executor cannot start without it'
     )

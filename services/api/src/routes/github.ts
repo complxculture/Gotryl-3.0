@@ -1,10 +1,11 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { App } from '@octokit/app';
 import { db } from '../db/client.js';
 import { githubIntegrations, tests, runs } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
+import { runQueue } from '../queue/client.js';
 
 function getGitHubApp(): App | null {
   const appId = process.env.GITHUB_APP_ID;
@@ -36,6 +37,7 @@ async function postOrUpdatePrComment(
     owner,
     repo,
     issue_number: pullNumber,
+    per_page: 100,
   });
 
   const existing = (comments.data as Array<{ id: number; body?: string }>).find((c) => c.body?.includes(BOT_MARKER));
@@ -60,6 +62,17 @@ const CreateIntegrationBody = z.object({
 });
 
 export const githubRoute: FastifyPluginAsync = async (app) => {
+  // Capture the raw request body as a string before JSON parsing so the webhook
+  // handler can verify the HMAC signature against the exact bytes GitHub signed.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, function (req, body, done) {
+    (req as FastifyRequest & { rawBody: string }).rawBody = body as string;
+    try {
+      done(null, JSON.parse(body as string));
+    } catch (e) {
+      done(e as Error, undefined);
+    }
+  });
+
   // POST /v1/github/integrations — link a project to a GitHub repo
   app.post('/v1/github/integrations', async (request, reply) => {
     const parsed = CreateIntegrationBody.safeParse(request.body);
@@ -69,34 +82,42 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
     const { projectId, repoFullName, installationId, targetUrl } = parsed.data;
     const accountId = request.account.accountId;
 
-    const [existing] = await db
-      .select({ id: githubIntegrations.id })
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.projectId, projectId))
-      .limit(1);
+    try {
+      const [existing] = await db
+        .select({ id: githubIntegrations.id })
+        .from(githubIntegrations)
+        .where(eq(githubIntegrations.projectId, projectId))
+        .limit(1);
 
-    let integration;
-    if (existing) {
-      [integration] = await db
-        .update(githubIntegrations)
-        .set({ repoFullName, installationId, targetUrl, updatedAt: new Date() })
-        .where(eq(githubIntegrations.id, existing.id))
-        .returning();
-    } else {
-      [integration] = await db
-        .insert(githubIntegrations)
-        .values({ accountId, projectId, repoFullName, installationId, targetUrl })
-        .returning();
+      let integration;
+      let statusCode: 200 | 201;
+      if (existing) {
+        [integration] = await db
+          .update(githubIntegrations)
+          .set({ repoFullName, installationId, targetUrl, updatedAt: new Date() })
+          .where(eq(githubIntegrations.id, existing.id))
+          .returning();
+        statusCode = 200;
+      } else {
+        [integration] = await db
+          .insert(githubIntegrations)
+          .values({ accountId, projectId, repoFullName, installationId, targetUrl })
+          .returning();
+        statusCode = 201;
+      }
+
+      return reply.code(statusCode).send(integration);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
     }
-
-    return reply.code(201).send(integration);
   });
 
   // POST /v1/github/webhook — receives GitHub PR/push events
   app.post('/v1/github/webhook', async (request, reply) => {
     const signature = request.headers['x-hub-signature-256'] as string | undefined;
-    // Use JSON.stringify for verification — GitHub sends compact JSON so this matches in standard cases
-    const rawBody = JSON.stringify(request.body);
+    // Use the captured raw body string for HMAC — JSON.stringify of a parsed object
+    // can differ from GitHub's exact bytes (Unicode escapes, key ordering).
+    const rawBody = (request as FastifyRequest & { rawBody?: string }).rawBody ?? JSON.stringify(request.body);
 
     if (!verifyWebhookSignature(rawBody, signature)) {
       return reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid webhook signature' } });
@@ -138,7 +159,7 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
         const octokit = await ghApp.getInstallationOctokit(parseInt(integration.installationId, 10));
 
         const projectTests = await db
-          .select({ id: tests.id, description: tests.description })
+          .select({ id: tests.id, description: tests.description, generatedCode: tests.generatedCode })
           .from(tests)
           .where(eq(tests.projectId, integration.projectId));
 
@@ -153,6 +174,7 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
 
         const TERMINAL = new Set(['passed', 'failed', 'error', 'cancelled']);
         const baseUrl = process.env.DASHBOARD_URL ?? 'https://app.gotryl.com';
+        const POLL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
         const results = await Promise.all(
           projectTests.map(async (t) => {
@@ -162,9 +184,31 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
               targetUrl: integration.targetUrl,
             }).returning();
 
-            // Poll until done
+            try {
+              await runQueue.add(
+                'execute',
+                {
+                  runId: run.id,
+                  testId: t.id,
+                  testDescription: t.description,
+                  testCode: t.generatedCode,
+                  targetUrl: integration.targetUrl,
+                },
+                { jobId: run.id },
+              );
+            } catch (queueErr) {
+              await db.delete(runs).where(eq(runs.id, run.id));
+              throw queueErr;
+            }
+
+            // Poll until done with a 10-minute hard deadline
             let current = run!;
+            const deadline = Date.now() + POLL_TIMEOUT_MS;
             while (!TERMINAL.has(current.status)) {
+              if (Date.now() >= deadline) {
+                app.log.warn({ runId: current.id }, 'github webhook: poll deadline exceeded');
+                return { testId: t.id, description: t.description, runId: current.id, status: 'error' as const };
+              }
               await new Promise<void>((r) => setTimeout(r, 3000));
               const [updated] = await db
                 .select()
