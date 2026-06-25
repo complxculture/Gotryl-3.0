@@ -1,0 +1,73 @@
+name: Gotryl Cloud Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  gotryl:
+    name: Run Gotryl tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Gotryl CLI
+        run: npm install -g @gotryl/cli
+
+      - name: Configure Gotryl
+        run: gotryl setup --from-env --yes
+        env:
+          GOTRYL_API_KEY: ${{ secrets.GOTRYL_API_KEY }}
+
+      - name: Run all tests
+        id: run_tests
+        run: |
+          gotryl test run \
+            --project ${{ vars.GOTRYL_PROJECT_ID }} \
+            --target-url ${{ vars.GOTRYL_TARGET_URL }} \
+            --wait \
+            --output json > gotryl-results.json
+        env:
+          GOTRYL_API_KEY: ${{ secrets.GOTRYL_API_KEY }}
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotryl-results
+          path: gotryl-results.json
+
+      - name: Download failure bundles
+        if: steps.run_tests.outcome == 'failure'
+        run: |
+          mkdir -p .gotryl/failures
+          # Extract failed test IDs from results and download bundles
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('gotryl-results.json', 'utf8'));
+            const failed = (r.results || []).filter(x => x.status !== 'passed').map(x => x.testId);
+            console.log(failed.join('\n'));
+          " | while read testId; do
+            gotryl test failure get "$testId" --out .gotryl/failures --output json
+          done
+        env:
+          GOTRYL_API_KEY: ${{ secrets.GOTRYL_API_KEY }}
+
+      - name: Upload failure bundles
+        if: steps.run_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotryl-failure-bundles
+          path: .gotryl/failures/
+
+      - name: Fail if tests failed
+        if: steps.run_tests.outcome == 'failure'
+        run: exit 1

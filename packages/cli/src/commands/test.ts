@@ -216,25 +216,69 @@ export function registerTestCommand(program: CommandType): void {
       }
     });
 
-  // ── gotryl test run <testId> ──────────────────────────────────────────────────
+  // ── gotryl test run [testId] ─────────────────────────────────────────────────
   testCommand
-    .command('run <id>')
-    .description('Dispatch a test run')
-    .requiredOption('--target-url <url>', 'Target URL (must be https://)')
-    .option('--wait', 'Poll until the run reaches a terminal state')
+    .command('run [id]')
+    .description('Dispatch a test run (provide testId, or --project to run all tests for a project)')
+    .option('--target-url <url>', 'Target URL (must be https://); falls back to GOTRYL_TARGET_URL env var')
+    .option('--project <id>', 'Run all tests for a project (CI mode)')
+    .option('--wait', 'Poll until the run(s) reach a terminal state')
     .option('--output <format>', 'Output format: human or json')
     .option('--dry-run', 'Skip API calls and return canned data')
-    .action(async (id: string, opts: { targetUrl: string; wait?: boolean; output?: string; dryRun?: boolean }) => {
+    .action(async (id: string | undefined, opts: { targetUrl?: string; project?: string; wait?: boolean; output?: string; dryRun?: boolean }) => {
       const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      const targetUrl = opts.targetUrl ?? process.env['GOTRYL_TARGET_URL'];
+      if (!targetUrl && !opts.dryRun) {
+        printError('MISSING_ARG', '--target-url is required (or set GOTRYL_TARGET_URL env var)', format);
+        process.exit(2);
+      }
+
+      // Project-wide run (CI mode)
+      if (opts.project) {
+        if (opts.dryRun) {
+          printResult({ dryRun: true, projectId: opts.project, results: [], passCount: 0, failCount: 0 }, format);
+          process.exit(0);
+        }
+        try {
+          const client = getClient(format);
+          const tests = await client.tests.list(opts.project);
+          if (tests.length === 0) {
+            printError('NOT_FOUND', 'No tests found for this project.', format);
+            process.exit(1);
+          }
+          const runs = await Promise.all(tests.map((t) => client.runs.create({ testId: t.id, targetUrl: targetUrl! })));
+          let completed = opts.wait ? await Promise.all(runs.map((r) => pollUntilDone(client, r.id))) : runs;
+          const results = completed.map((r, i) => ({ runId: r.id, testId: tests[i]!.id, status: r.status, durationMs: r.durationMs }));
+          const passCount = results.filter((r) => r.status === 'passed').length;
+          const failCount = results.length - passCount;
+          if (format === 'json') {
+            printResult({ projectId: opts.project, totalTests: results.length, passCount, failCount, results }, format);
+          } else {
+            console.log(`${passCount}/${results.length} tests passed`);
+            for (const r of results) console.log(`  ${r.testId}: ${r.status} (${r.durationMs ?? 0}ms)`);
+          }
+          process.exit(failCount > 0 ? 1 : 0);
+        } catch (err) {
+          if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+          else { printError('INTERNAL_ERROR', String(err), format); }
+          process.exit(1);
+        }
+      }
+
+      if (!id) {
+        printError('MISSING_ARG', 'Provide a testId or use --project <id> for project-wide run', format);
+        process.exit(2);
+      }
+
       if (opts.dryRun) {
         const now = new Date().toISOString();
-        const run = { id: 'run_dryrun00000000', testId: id, accountId: 'acc_dryrun00000000', targetUrl: opts.targetUrl, status: 'queued', durationMs: null, stdout: null, stderr: null, error: null, completedAt: null, createdAt: now, updatedAt: now };
+        const run = { id: 'run_dryrun00000000', testId: id, accountId: 'acc_dryrun00000000', targetUrl: targetUrl ?? 'https://example.com', status: 'queued', durationMs: null, stdout: null, stderr: null, error: null, completedAt: null, createdAt: now, updatedAt: now };
         printResult(run, format);
         process.exit(0);
       }
       try {
         const client = getClient(format);
-        let run = await client.runs.create({ testId: id, targetUrl: opts.targetUrl });
+        let run = await client.runs.create({ testId: id, targetUrl: targetUrl! });
         if (opts.wait) {
           run = await pollUntilDone(client, run.id);
           if (format === 'json') {
@@ -488,18 +532,36 @@ export function registerTestCommand(program: CommandType): void {
   failureCommand
     .command('get <testId>')
     .description('Fetch the full failure bundle for the latest failed run of a test')
+    .option('--out <dir>', 'Save bundle JSON to a directory (for CI artifact upload)')
     .option('--output <format>', 'Output format: human or json')
     .option('--dry-run', 'Skip API calls and return canned data')
-    .action(async (testId: string, opts: { output?: string; dryRun?: boolean }) => {
+    .action(async (testId: string, opts: { out?: string; output?: string; dryRun?: boolean }) => {
       const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
       if (opts.dryRun) {
-        printResult({ snapshotId: 'snap_dryrun0000000000', failingStep: { lineNo: 0, actionType: 'unknown', selector: '' }, screenshotUrls: [], domSnapshot: '', neighboringSteps: [], testSource: '', rootCauseHypothesis: null, fixTarget: null }, format);
+        const stub = { snapshotId: 'snap_dryrun0000000000', failingStep: { lineNo: 0, actionType: 'unknown', selector: '' }, screenshotUrls: [], domSnapshot: '', neighboringSteps: [], testSource: '', rootCauseHypothesis: null, fixTarget: null };
+        if (opts.out) {
+          mkdirSync(opts.out, { recursive: true });
+          const dest = join(opts.out, `${testId}.json`);
+          writeFileSync(dest, JSON.stringify(stub, null, 2));
+          printResult({ dryRun: true, path: dest }, format);
+        } else {
+          printResult(stub, format);
+        }
         process.exit(0);
       }
       try {
         const client = getClient(format);
         const bundle = await client.failures.get(testId);
-        if (format === 'json') {
+        if (opts.out) {
+          mkdirSync(opts.out, { recursive: true });
+          const dest = join(opts.out, `${testId}.json`);
+          writeFileSync(dest, JSON.stringify(bundle, null, 2));
+          if (format === 'json') {
+            printResult({ testId, path: dest }, format);
+          } else {
+            console.log(`Bundle saved to ${dest}`);
+          }
+        } else if (format === 'json') {
           printResult(bundle, format);
         } else {
           console.log(`Snapshot:  ${bundle.snapshotId}`);

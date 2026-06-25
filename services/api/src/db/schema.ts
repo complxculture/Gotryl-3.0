@@ -33,6 +33,20 @@ export const tests = pgTable('tests', {
   accountIdIdx: index('tests_account_id_idx').on(t.accountId),
 }));
 
+export const githubIntegrations = pgTable('github_integrations', {
+  id: text('id').primaryKey().$defaultFn(() => `ghi_${nanoid(16)}`),
+  accountId: text('account_id').notNull(),
+  projectId: text('project_id').notNull().unique(),
+  repoFullName: text('repo_full_name').notNull(),
+  installationId: text('installation_id').notNull(),
+  targetUrl: text('target_url').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  repoIdx: index('github_integrations_repo_idx').on(t.repoFullName),
+  accountIdx: index('github_integrations_account_idx').on(t.accountId),
+}));
+
 export const testDeletions = pgTable('test_deletions', {
   id: text('id').primaryKey().$defaultFn(() => `tdel_${nanoid(16)}`),
   accountId: text('account_id').notNull(),
