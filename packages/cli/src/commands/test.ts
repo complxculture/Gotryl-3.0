@@ -376,6 +376,112 @@ export function registerTestCommand(program: CommandType): void {
       }
     });
 
+  // ── gotryl test code get/put/steps ───────────────────────────────────────────
+  const codeCommand = new Command('code').description('Access and update generated test source');
+
+  codeCommand
+    .command('get <testId>')
+    .description('Fetch the generated Python source for a test')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (testId: string, opts: { output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      if (opts.dryRun) {
+        printResult({ code: '# dry-run', etag: '"dryrun"' }, format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const result = await client.tests.getCode(testId);
+        if (format === 'json') {
+          printResult(result, format);
+        } else {
+          console.log(`ETag: ${result.etag}`);
+          console.log(result.code);
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+        else { printError('INTERNAL_ERROR', String(err), format); }
+        process.exit(1);
+      }
+    });
+
+  codeCommand
+    .command('put <testId>')
+    .description('Replace generated test source (requires ETag from code get)')
+    .requiredOption('--file <path>', 'Path to updated .py file')
+    .requiredOption('--etag <etag>', 'ETag value from code get (used for optimistic concurrency)')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (testId: string, opts: { file: string; etag: string; output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      let code: string;
+      try {
+        code = readFileSync(opts.file, 'utf8');
+      } catch (e) {
+        printError('INVALID_FILE', `Could not read file: ${String(e)}`, format);
+        process.exit(2);
+      }
+      if (opts.dryRun) {
+        printResult({ code, etag: '"dryrun-new"' }, format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const result = await client.tests.putCode(testId, code, opts.etag);
+        if (format === 'json') {
+          printResult(result, format);
+        } else {
+          console.log(`Updated. New ETag: ${result.etag}`);
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) {
+          if (err.code === 'PRECONDITION_FAILED') {
+            printError(err.code, 'Test code has changed. Fetch the latest and retry.', format);
+          } else {
+            printError(err.code, err.message, format);
+          }
+        } else {
+          printError('INTERNAL_ERROR', String(err), format);
+        }
+        process.exit(1);
+      }
+    });
+
+  codeCommand
+    .command('steps <testId>')
+    .description('List step artifacts (screenshots and DOM snapshots) from the latest run')
+    .option('--output <format>', 'Output format: human or json')
+    .option('--dry-run', 'Skip API calls and return canned data')
+    .action(async (testId: string, opts: { output?: string; dryRun?: boolean }) => {
+      const format = (opts.output ?? program.opts().output ?? 'human') as OutputFormat;
+      if (opts.dryRun) {
+        printResult([], format);
+        process.exit(0);
+      }
+      try {
+        const client = getClient(format);
+        const steps = await client.tests.getSteps(testId);
+        if (format === 'json') {
+          printResult(steps, format);
+        } else {
+          if (steps.length === 0) {
+            console.log('No steps recorded for this test.');
+          } else {
+            for (const s of steps) {
+              console.log(`Step ${s.step}: screenshot=${s.screenshotUrl}  dom=${s.domSnapshotUrl}`);
+            }
+          }
+        }
+      } catch (err) {
+        if (err instanceof GotrylError) { printError(err.code, err.message, format); }
+        else { printError('INTERNAL_ERROR', String(err), format); }
+        process.exit(1);
+      }
+    });
+
+  testCommand.addCommand(codeCommand);
+
   // ── gotryl test failure get <testId> ─────────────────────────────────────────
   const failureCommand = new Command('failure').description('Retrieve failure bundles');
 

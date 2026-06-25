@@ -1,35 +1,8 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/client.js';
 import { runs, tests } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
-
-function makeR2Client(): S3Client {
-  return new S3Client({
-    region: 'auto',
-    endpoint: process.env.R2_ENDPOINT ?? '',
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
-    },
-  });
-}
-
-async function fetchBundle(runId: string): Promise<Record<string, unknown> | null> {
-  const bucket = process.env.R2_BUCKET;
-  if (!bucket || !process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID) return null;
-  try {
-    const client = makeR2Client();
-    const resp = await client.send(new GetObjectCommand({
-      Bucket: bucket,
-      Key: `runs/${runId}/failure-bundle.json`,
-    }));
-    const body = await resp.Body?.transformToString('utf-8');
-    return body ? (JSON.parse(body) as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
+import { fetchFailureBundle } from '../lib/r2.js';
 
 export const failuresRoute: FastifyPluginAsync = async (app) => {
   // GET /v1/failures/:testId — full bundle for the latest failed run of a test
@@ -57,7 +30,7 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'No failure bundle found for this test' } });
     }
 
-    const bundle = await fetchBundle(run.id);
+    const bundle = await fetchFailureBundle(run.id);
     if (!bundle) {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Failure bundle not available' } });
     }
@@ -90,7 +63,7 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'No failure bundle found for this test' } });
     }
 
-    const bundle = await fetchBundle(run.id);
+    const bundle = await fetchFailureBundle(run.id);
     if (!bundle) {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Failure bundle not available' } });
     }
@@ -120,7 +93,7 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'No failure bundle for this run' } });
     }
 
-    const bundle = await fetchBundle(run.id);
+    const bundle = await fetchFailureBundle(run.id);
     if (!bundle) {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Failure bundle not available' } });
     }

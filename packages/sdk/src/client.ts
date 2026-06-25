@@ -1,7 +1,7 @@
 import { GotrylError } from './errors.js';
 import type { FailureBundle, Project, Run, RunStatus, Test } from './types.js';
 
-type RequestFn = <T>(method: string, path: string, body?: unknown) => Promise<T>;
+type RequestFn = <T>(method: string, path: string, body?: unknown, extraHeaders?: Record<string, string>) => Promise<T>;
 
 class AuthResource {
   constructor(private req: RequestFn) {}
@@ -56,6 +56,18 @@ class TestsResource {
 
   createBatch(body: { projectId: string; tests: Array<{ description: string }> }): Promise<Test[]> {
     return this.req('POST', '/v1/tests/batch', body);
+  }
+
+  getCode(id: string): Promise<{ code: string; etag: string }> {
+    return this.req('GET', `/v1/tests/${id}/code`);
+  }
+
+  putCode(id: string, code: string, ifMatch: string): Promise<{ code: string; etag: string }> {
+    return this.req('PUT', `/v1/tests/${id}/code`, { code }, { 'If-Match': ifMatch });
+  }
+
+  getSteps(id: string): Promise<Array<{ step: number; screenshotUrl: string; domSnapshotUrl: string }>> {
+    return this.req('GET', `/v1/tests/${id}/steps`);
   }
 }
 
@@ -119,7 +131,7 @@ export class GotrylClient {
     this.failures = new FailuresResource(req);
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -130,6 +142,7 @@ export class GotrylClient {
         Authorization: `Bearer ${this.apiKey}`,
         // omit Content-Type on bodyless requests — avoids CORS preflights on GET/DELETE
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...extraHeaders,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
