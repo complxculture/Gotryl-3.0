@@ -28,7 +28,7 @@ export function startRunWorker(): Worker<RunJobData> {
   if (!executorUrl) throw new Error('EXECUTOR_URL is required');
 
   const worker = new Worker<RunJobData>(
-    'gotryl:runs',
+    'runs',
     async (job: Job<RunJobData>) => {
       const { runId, testId, testDescription, testCode, targetUrl } = job.data;
 

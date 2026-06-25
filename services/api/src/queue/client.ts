@@ -15,4 +15,4 @@ export const connection = {
   enableReadyCheck: false,
 };
 
-export const runQueue = new Queue('gotryl:runs', { connection });
+export const runQueue = new Queue('runs', { connection, prefix: 'gotryl' });
