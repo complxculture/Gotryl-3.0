@@ -82,6 +82,23 @@ export const runsRoute: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.get('/v1/runs', async (request, reply) => {
+    const rawTestId = (request.query as Record<string, unknown>)['testId'];
+    const testId = Array.isArray(rawTestId) ? rawTestId[0] : rawTestId;
+    if (!testId || typeof testId !== 'string') {
+      return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'testId query parameter is required' } });
+    }
+    try {
+      const rows = await db
+        .select()
+        .from(runs)
+        .where(and(eq(runs.testId, testId), eq(runs.accountId, request.account.accountId)));
+      return reply.send(rows);
+    } catch {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    }
+  });
+
   app.get('/v1/runs/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
