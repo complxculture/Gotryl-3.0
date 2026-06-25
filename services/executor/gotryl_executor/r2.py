@@ -53,6 +53,22 @@ def upload_run_artifacts(run_id: str, artifacts_dir: str) -> None:
         _upload(client, str(video_file), key)
 
 
+def upload_failure_bundle(run_id: str, bundle: dict) -> None:
+    """Upload failure-bundle.json to R2. Best-effort; never raises."""
+    if not _R2_CONFIGURED:
+        logger.debug('R2 not configured — skipping bundle upload for run %s', run_id)
+        return
+    import json
+    client = _client()
+    key = f'runs/{run_id}/failure-bundle.json'
+    body = json.dumps(bundle, ensure_ascii=False).encode('utf-8')
+    try:
+        client.put_object(Bucket=_R2_BUCKET, Key=key, Body=body, ContentType='application/json')
+        logger.debug('Uploaded failure bundle: %s', key)
+    except Exception as exc:
+        logger.warning('Failed to upload failure bundle %s: %s', key, exc)
+
+
 def _upload(client, local_path: str, key: str) -> None:
     try:
         client.upload_file(local_path, _R2_BUCKET, key)

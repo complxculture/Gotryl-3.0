@@ -20,6 +20,7 @@ interface ExecutorResult {
   stderr: string;
   error?: string;
   generatedCode?: string;
+  snapshotId?: string;
 }
 
 export function startRunWorker(): Worker<RunJobData> {
@@ -86,6 +87,7 @@ export function startRunWorker(): Worker<RunJobData> {
           stdout: execResult.stdout,
           stderr: execResult.stderr,
           error: execResult.error ?? (terminalStatus !== execResult.status ? `Executor returned unknown status: ${execResult.status}` : null),
+          snapshotId: execResult.snapshotId ?? null,
           updatedAt: new Date(),
           completedAt: new Date(),
         })

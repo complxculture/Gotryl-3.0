@@ -154,6 +154,19 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
             except Exception as exc:
                 logger.warning('Artifact upload error for run %s: %s', run_id, exc)
 
+            snapshot_id = None
+            if status == 'failed':
+                try:
+                    from .bundler import assemble_failure_bundle
+                    from .r2 import upload_failure_bundle
+                    bundle = assemble_failure_bundle(
+                        run_id, artifacts_dir, test_code, stdout, stderr
+                    )
+                    snapshot_id = bundle['snapshotId']
+                    upload_failure_bundle(run_id, bundle)
+                except Exception as exc:
+                    logger.warning('Failure bundle assembly error for run %s: %s', run_id, exc)
+
             result = {
                 'status': status,
                 'steps': [],
@@ -163,6 +176,8 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
             }
             if generated_code is not None:
                 result['generatedCode'] = generated_code
+            if snapshot_id is not None:
+                result['snapshotId'] = snapshot_id
             return result
         except Exception as e:
             duration_ms = int(time.time() * 1000) - start_ms
