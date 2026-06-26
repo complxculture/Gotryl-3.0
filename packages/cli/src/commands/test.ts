@@ -1,9 +1,11 @@
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, createWriteStream } from 'node:fs';
 import { join } from 'node:path';
+import { Readable } from 'node:stream';
 import type { Command as CommandType } from 'commander';
 import { Command } from 'commander';
 import { GotrylError, type Run } from '@gotryl/sdk';
 import { getClient } from '../lib/client.js';
+import { readConfig } from '../lib/config.js';
 import { printResult, printError, type OutputFormat } from '../lib/output.js';
 
 const TERMINAL_STATUSES = new Set(['passed', 'failed', 'error', 'cancelled']);
@@ -25,6 +27,100 @@ async function pollUntilDone(
 
 function runExitCode(status: string): number {
   return status === 'passed' ? 0 : 1;
+}
+
+interface FailureSummary {
+  rootCauseHypothesis: string | null;
+  fixTarget: unknown;
+  failingStep: unknown;
+}
+
+async function saveRunLocally(
+  run: Run,
+  testDescription: string,
+  rootCause: FailureSummary | null,
+): Promise<string> {
+  const cfg = readConfig();
+  const apiKey = process.env['GOTRYL_API_KEY'] ?? cfg?.apiKey ?? '';
+  const baseUrl = (process.env['GOTRYL_API_URL'] ?? cfg?.baseUrl ?? 'https://api.gotryl.com').replace(/\/$/, '');
+
+  const runDir = join(process.cwd(), '.gotryl', 'runs', run.id);
+  const artifactsDir = join(runDir, 'artifacts');
+  mkdirSync(artifactsDir, { recursive: true });
+
+  const summaryData = {
+    runId: run.id,
+    testId: run.testId,
+    testDescription,
+    status: run.status,
+    targetUrl: run.targetUrl,
+    durationMs: run.durationMs,
+    completedAt: run.completedAt,
+    savedAt: new Date().toISOString(),
+    ...(rootCause ? { rootCauseHypothesis: rootCause.rootCauseHypothesis, fixTarget: rootCause.fixTarget } : {}),
+  };
+  writeFileSync(join(runDir, 'summary.json'), JSON.stringify(summaryData, null, 2));
+
+  const icon = run.status === 'passed' ? '✓' : run.status === 'failed' ? '✗' : '⚠';
+  const mdLines = [
+    `# ${icon} ${run.status.toUpperCase()} — ${testDescription}`,
+    '',
+    `- **Run ID:** ${run.id}`,
+    `- **Target:** ${run.targetUrl}`,
+    `- **Duration:** ${run.durationMs != null ? `${(run.durationMs / 1000).toFixed(1)}s` : 'n/a'}`,
+    `- **Completed:** ${run.completedAt ?? 'n/a'}`,
+    '',
+  ];
+  if (run.status === 'failed' && rootCause?.rootCauseHypothesis) {
+    mdLines.push('## What went wrong', '', rootCause.rootCauseHypothesis, '');
+  }
+  if (run.status === 'failed' && rootCause?.fixTarget) {
+    mdLines.push('## Fix target', '', '```json', JSON.stringify(rootCause.fixTarget, null, 2), '```', '');
+  }
+  if (run.stdout?.trim()) {
+    mdLines.push('## Output', '', '```', run.stdout.trim(), '```', '');
+  }
+  if (run.stderr?.trim()) {
+    mdLines.push('## Errors', '', '```', run.stderr.trim(), '```', '');
+  }
+  writeFileSync(join(runDir, 'summary.md'), mdLines.join('\n'));
+
+  // Download video best-effort (requires R2 to be configured)
+  if (apiKey) {
+    try {
+      const resp = await fetch(`${baseUrl}/v1/artifacts/${run.id}/video/video_0.webm`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (resp.ok && resp.body) {
+        const dest = join(artifactsDir, 'video.webm');
+        const writer = createWriteStream(dest);
+        const readable = Readable.fromWeb(resp.body as import('stream/web').ReadableStream<Uint8Array>);
+        await new Promise<void>((resolve, reject) => {
+          readable.pipe(writer);
+          writer.on('finish', resolve);
+          writer.on('error', reject);
+          readable.on('error', reject);
+        });
+      }
+    } catch { /* best-effort — R2 may not be configured */ }
+  }
+
+  return runDir;
+}
+
+function printRunResult(run: Run, rootCause: FailureSummary | null, format: OutputFormat, runDir: string): void {
+  if (format === 'json') return; // JSON callers handle their own output
+  const durationStr = `${run.durationMs ?? 0}ms`;
+  const statusLine = `Run ${run.id}: ${run.status} (${durationStr})`;
+  console.log(statusLine);
+  if (run.status === 'failed' && rootCause?.rootCauseHypothesis) {
+    console.log(`\nRoot cause: ${rootCause.rootCauseHypothesis}`);
+    if (rootCause.fixTarget) {
+      console.log(`Fix target: ${JSON.stringify(rootCause.fixTarget)}`);
+    }
+  }
+  console.log(`\nRun saved → ${runDir}/`);
 }
 
 export function registerTestCommand(program: CommandType): void {
@@ -284,10 +380,17 @@ export function registerTestCommand(program: CommandType): void {
         let run = await client.runs.create({ testId: id, targetUrl: targetUrl! });
         if (opts.wait) {
           run = await pollUntilDone(client, run.id);
+          let rootCause: FailureSummary | null = null;
+          if (run.status === 'failed') {
+            try { rootCause = await client.failures.getSummary(run.testId) as FailureSummary; } catch { /* best-effort */ }
+          }
+          let testDescription = run.testId;
+          try { testDescription = (await client.tests.get(run.testId)).description; } catch { /* best-effort */ }
+          const runDir = await saveRunLocally(run, testDescription, rootCause);
           if (format === 'json') {
-            printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt }, format);
+            printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt, runDir }, format);
           } else {
-            console.log(`Run ${run.id}: ${run.status} (${run.durationMs ?? 0}ms)`);
+            printRunResult(run, rootCause, format, runDir);
           }
           process.exit(runExitCode(run.status));
         }
@@ -319,10 +422,17 @@ export function registerTestCommand(program: CommandType): void {
       try {
         const client = getClient(format);
         const run = await pollUntilDone(client, runId);
+        let rootCause: FailureSummary | null = null;
+        if (run.status === 'failed') {
+          try { rootCause = await client.failures.getSummary(run.testId) as FailureSummary; } catch { /* best-effort */ }
+        }
+        let testDescription = run.testId;
+        try { testDescription = (await client.tests.get(run.testId)).description; } catch { /* best-effort */ }
+        const runDir = await saveRunLocally(run, testDescription, rootCause);
         if (format === 'json') {
-          printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt }, format);
+          printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt, runDir }, format);
         } else {
-          console.log(`Run ${run.id}: ${run.status} (${run.durationMs ?? 0}ms)`);
+          printRunResult(run, rootCause, format, runDir);
         }
         process.exit(runExitCode(run.status));
       } catch (err) {
@@ -363,10 +473,17 @@ export function registerTestCommand(program: CommandType): void {
         let run = await client.runs.create({ testId: id, targetUrl });
         if (opts.wait) {
           run = await pollUntilDone(client, run.id);
+          let rootCause: FailureSummary | null = null;
+          if (run.status === 'failed') {
+            try { rootCause = await client.failures.getSummary(run.testId) as FailureSummary; } catch { /* best-effort */ }
+          }
+          let testDescription = run.testId;
+          try { testDescription = (await client.tests.get(run.testId)).description; } catch { /* best-effort */ }
+          const runDir = await saveRunLocally(run, testDescription, rootCause);
           if (format === 'json') {
-            printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt }, format);
+            printResult({ runId: run.id, testId: run.testId, status: run.status, durationMs: run.durationMs, targetUrl: run.targetUrl, completedAt: run.completedAt, runDir }, format);
           } else {
-            console.log(`Rerun ${run.id}: ${run.status} (${run.durationMs ?? 0}ms)`);
+            printRunResult(run, rootCause, format, runDir);
           }
           process.exit(runExitCode(run.status));
         }

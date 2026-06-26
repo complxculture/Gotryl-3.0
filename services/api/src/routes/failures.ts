@@ -101,6 +101,64 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
     return reply.send(bundle);
   });
 
+  // GET /v1/artifacts/:runId/steps/:step/screenshot — proxy step screenshot from R2
+  app.get('/v1/artifacts/:runId/steps/:step/screenshot', async (request, reply) => {
+    const { runId, step } = request.params as { runId: string; step: string };
+    const accountId = request.account.accountId;
+
+    if (!/^\d+$/.test(step)) {
+      return reply.code(400).send({ error: { code: 'INVALID_STEP', message: 'Step must be a non-negative integer' } });
+    }
+
+    const [run] = await db
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.id, runId), eq(runs.accountId, accountId)))
+      .limit(1);
+
+    if (!run) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Run not found' } });
+    }
+
+    const stream = await streamR2Object(`runs/${runId}/steps/${step}/screenshot.png`);
+    if (!stream) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Screenshot not available' } });
+    }
+
+    reply.header('Content-Type', 'image/png');
+    reply.header('Cache-Control', 'public, max-age=3600');
+    return reply.send(stream.body);
+  });
+
+  // GET /v1/artifacts/:runId/steps/:step/dom — proxy step DOM snapshot from R2
+  app.get('/v1/artifacts/:runId/steps/:step/dom', async (request, reply) => {
+    const { runId, step } = request.params as { runId: string; step: string };
+    const accountId = request.account.accountId;
+
+    if (!/^\d+$/.test(step)) {
+      return reply.code(400).send({ error: { code: 'INVALID_STEP', message: 'Step must be a non-negative integer' } });
+    }
+
+    const [run] = await db
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.id, runId), eq(runs.accountId, accountId)))
+      .limit(1);
+
+    if (!run) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Run not found' } });
+    }
+
+    const stream = await streamR2Object(`runs/${runId}/steps/${step}/dom.html`);
+    if (!stream) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'DOM snapshot not available' } });
+    }
+
+    reply.header('Content-Type', 'text/html; charset=utf-8');
+    reply.header('Cache-Control', 'public, max-age=3600');
+    return reply.send(stream.body);
+  });
+
   // GET /v1/artifacts/:runId/video/:filename — proxy video from R2
   app.get('/v1/artifacts/:runId/video/:filename', async (request, reply) => {
     const { runId, filename } = request.params as { runId: string; filename: string };

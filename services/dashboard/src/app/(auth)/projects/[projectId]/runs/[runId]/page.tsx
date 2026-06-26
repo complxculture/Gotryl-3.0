@@ -91,23 +91,28 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
               </p>
             )}
           </div>
-          {(run.snapshotId) && (
-            <div style={{ padding: '16px 24px', background: '#fff', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <a
-                href={`${apiBase}/v1/artifacts/${runId}/screenshot`}
-                target="_blank" rel="noreferrer"
-                style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
-              >
-                View screenshot →
-              </a>
-              <a
-                href={`${apiBase}/v1/artifacts/${runId}/video/video_0.webm`}
-                target="_blank" rel="noreferrer"
-                style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
-              >
-                Watch recording →
-              </a>
-            </div>
+        </div>
+      )}
+
+      {/* Recording — available for all completed runs */}
+      {!isLive && run.status !== 'error' && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 20px', marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Artifacts:</span>
+          <a
+            href={`${apiBase}/v1/artifacts/${runId}/video/video_0.webm`}
+            target="_blank" rel="noreferrer"
+            style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+          >
+            Watch recording →
+          </a>
+          {run.snapshotId && (
+            <a
+              href={`${apiBase}/v1/artifacts/${runId}/steps/0/screenshot`}
+              target="_blank" rel="noreferrer"
+              style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+            >
+              View screenshot →
+            </a>
           )}
         </div>
       )}

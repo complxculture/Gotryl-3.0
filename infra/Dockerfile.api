@@ -25,5 +25,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/services/api/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+# pnpm workspace symlink: node_modules/@gotryl/sdk -> ../../packages/sdk
+# The symlink target must exist in the runner stage
+COPY --from=builder /app/packages/sdk/package.json ./packages/sdk/package.json
+COPY --from=builder /app/packages/sdk/dist ./packages/sdk/dist
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

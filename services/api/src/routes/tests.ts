@@ -237,8 +237,11 @@ export const testsRoute: FastifyPluginAsync = async (app) => {
     const steps = screenshotUrls.map((key) => {
       const match = /steps\/(\d+)\/screenshot\.png$/.exec(key);
       const step = match ? parseInt(match[1]!, 10) : 0;
-      const domKey = key.replace('screenshot.png', 'dom.html');
-      return { step, screenshotUrl: key, domSnapshotUrl: domKey };
+      return {
+        step,
+        screenshotUrl: `/v1/artifacts/${run.id}/steps/${step}/screenshot`,
+        domSnapshotUrl: `/v1/artifacts/${run.id}/steps/${step}/dom`,
+      };
     });
 
     return reply.send(steps);

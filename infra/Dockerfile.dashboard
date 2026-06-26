@@ -21,5 +21,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/services/dashboard/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
+# pnpm workspace symlink: node_modules/@gotryl/sdk -> ../../packages/sdk
+# Copy SDK so the symlink resolves at runtime (Next.js may also need it for API routes)
+COPY --from=builder /app/packages/sdk/package.json ./packages/sdk/package.json
+COPY --from=builder /app/packages/sdk/dist ./packages/sdk/dist
 EXPOSE 3000
 CMD ["node_modules/.bin/next", "start"]
