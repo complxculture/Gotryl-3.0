@@ -16,7 +16,7 @@ export default function LandingNav() {
             Gotryl
           </Link>
           <nav className="nav-desktop-links">
-            <a href="#how-it-works" style={{ fontSize: 14, color: '#6b7280', textDecoration: 'none', fontWeight: 500 }}>Docs</a>
+            <a href="https://github.com/complxculture/Gotryl-3.0#readme" style={{ fontSize: 14, color: '#6b7280', textDecoration: 'none', fontWeight: 500 }}>Docs</a>
             <a href="https://github.com/complxculture/Gotryl-3.0" target="_blank" rel="noreferrer" style={{ fontSize: 14, color: '#6b7280', textDecoration: 'none', fontWeight: 500 }}>GitHub</a>
           </nav>
         </div>
@@ -37,7 +37,7 @@ export default function LandingNav() {
 
       {open && (
         <div className="nav-mobile-menu" style={{ display: 'flex' }}>
-          <a href="#how-it-works" onClick={() => setOpen(false)}>Docs</a>
+          <a href="https://github.com/complxculture/Gotryl-3.0#readme" onClick={() => setOpen(false)}>Docs</a>
           <a href="https://github.com/complxculture/Gotryl-3.0" target="_blank" rel="noreferrer" onClick={() => setOpen(false)}>GitHub</a>
           <Link href="/login" onClick={() => setOpen(false)}>Sign in</Link>
           <Link href="/signup" className="nav-cta" onClick={() => setOpen(false)}>Get started free</Link>

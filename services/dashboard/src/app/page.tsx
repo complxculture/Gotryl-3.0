@@ -230,7 +230,7 @@ export default function Home() {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>Developers</div>
-              {[{ label: 'Documentation', href: '#' }, { label: 'Quickstart', href: '/signup' }, { label: 'GitHub', href: 'https://github.com/complxculture/Gotryl-3.0' }, { label: 'Changelog', href: '#' }].map(({ label, href }) => (
+              {[{ label: 'Documentation', href: 'https://github.com/complxculture/Gotryl-3.0#readme' }, { label: 'Quickstart', href: '/signup' }, { label: 'GitHub', href: 'https://github.com/complxculture/Gotryl-3.0' }, { label: 'Changelog', href: 'https://github.com/complxculture/Gotryl-3.0/commits/master' }].map(({ label, href }) => (
                 <div key={label} style={{ marginBottom: 10 }}>
                   <a href={href} style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>{label}</a>
                 </div>
@@ -248,8 +248,8 @@ export default function Home() {
           <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} Gotryl. All rights reserved.</span>
             <div style={{ display: 'flex', gap: 16 }}>
-              <a href="#" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Privacy</a>
-              <a href="#" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Terms</a>
+              <a href="/privacy" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Privacy</a>
+              <a href="/terms" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Terms</a>
             </div>
           </div>
         </div>
