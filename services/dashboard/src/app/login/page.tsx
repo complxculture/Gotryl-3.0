@@ -1,6 +1,7 @@
 'use client';
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 function LoginForm() {
   const [apiKey, setApiKey] = useState('');
@@ -33,31 +34,49 @@ function LoginForm() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '80px auto', padding: '24px', border: '1px solid #e2e8f0', borderRadius: 12 }}>
-      <h1 style={{ margin: '0 0 24px', fontSize: 22 }}>Sign in to Gotryl</h1>
+    <div style={{ maxWidth: 400, margin: '80px auto', padding: '28px', border: '1px solid #e5e7eb', borderRadius: 12 }}>
+      <h1 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 800 }}>Sign in to Gotryl</h1>
+      <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 24px' }}>
+        Use your API key to access the dashboard.
+      </p>
+
       <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>API Key</label>
+        <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>API Key</label>
         <input
           type="password"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           placeholder="gk_..."
           required
-          style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
         />
-        {error && <p style={{ color: '#e53e3e', marginTop: 8, fontSize: 14 }}>{error}</p>}
+        {error && <p style={{ color: '#dc2626', marginTop: 8, fontSize: 14 }}>{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          style={{ marginTop: 16, width: '100%', background: '#2b6cb0', color: '#fff', border: 'none', borderRadius: 6, padding: '10px', fontSize: 15, cursor: 'pointer' }}
+          style={{ marginTop: 16, width: '100%', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 7, padding: '10px', fontSize: 15, cursor: 'pointer', fontWeight: 700 }}
         >
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      <p style={{ marginTop: 20, fontSize: 14, color: '#718096', textAlign: 'center' }}>
-        No account yet?{' '}
-        <a href="/signup" style={{ color: '#2b6cb0', textDecoration: 'none' }}>Create one</a>
-      </p>
+
+      <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '24px 0' }} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>First time here?</div>
+          <Link href="/signup" style={{ fontSize: 14, color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>
+            → Create an account
+          </Link>
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Need your API key?</div>
+          <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.6 }}>
+            Ask the developer on your team to share one from their{' '}
+            <Link href="/settings/keys" style={{ color: '#2563eb', textDecoration: 'none' }}>API Keys</Link> page.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

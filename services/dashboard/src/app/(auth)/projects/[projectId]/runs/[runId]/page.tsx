@@ -2,123 +2,151 @@ import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
 import type { FailureBundle } from '@gotryl/sdk';
 
-function statusColor(s: string) {
-  return s === 'passed' ? '#38a169' : s === 'failed' ? '#e53e3e' : s === 'error' ? '#dd6b20' : '#718096';
+function fmt(ms: number) { return `${(ms / 1000).toFixed(1)}s`; }
+function fmtDate(d: string) {
+  return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  passed:  { label: 'Passed',  color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', icon: '✓' },
+  failed:  { label: 'Failed',  color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: '✕' },
+  error:   { label: 'Error',   color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: '⚠' },
+  queued:  { label: 'Queued',  color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', icon: '○' },
+  running: { label: 'Running', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: '⟳' },
+};
 
 export default async function RunDetailPage({ params }: { params: { projectId: string; runId: string } }) {
   const { projectId, runId } = params;
 
   let client;
-  try {
-    client = getClient();
-  } catch {
-    redirect('/login');
-  }
+  try { client = getClient(); } catch { redirect('/login'); }
 
   const run = await client.runs.get(runId);
 
-  let bundle: FailureBundle | null = null;
-  let steps: Array<{ step: number; screenshotUrl: string; domSnapshotUrl: string }> = [];
+  let test = { description: '' };
+  try { test = await client.tests.get(run.testId); } catch { /* best effort */ }
 
-  if (run.status === 'failed' && run.snapshotId) {
-    try {
-      bundle = await client.failures.getArtifacts(runId);
-    } catch { /* no bundle */ }
-    try {
-      steps = await client.tests.getSteps(run.testId);
-    } catch { /* no steps */ }
+  let bundle: FailureBundle | null = null;
+  if ((run.status === 'failed' || run.status === 'error') && run.snapshotId) {
+    try { bundle = await client.failures.getArtifacts(runId); } catch { /* no bundle */ }
   }
 
   const apiBase = process.env.GOTRYL_API_URL ?? 'https://api.gotryl.com';
-  const videoApiBase = `${apiBase}/v1/artifacts/${runId}/video`;
+  const cfg = STATUS_CONFIG[run.status] ?? STATUS_CONFIG.queued;
+  const testLabel = test.description
+    ? (test.description.length > 60 ? test.description.slice(0, 57) + '…' : test.description)
+    : run.testId;
+  const isInfraError = run.status === 'error';
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <a href={`/projects/${projectId}/tests/${run.testId}/runs`} style={{ color: '#718096', fontSize: 14 }}>← Run history</a>
-        <h1 style={{ fontSize: 20, margin: '8px 0' }}>
-          Run <span style={{ fontFamily: 'monospace', fontSize: 16 }}>{runId}</span>
-        </h1>
-      </div>
+    <div style={{ maxWidth: 800 }}>
 
-      {/* Run summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {[
-          ['Status', <span key="s" style={{ color: statusColor(run.status), fontWeight: 700, fontSize: 18 }}>{run.status}</span>],
-          ['Duration', run.durationMs != null ? `${(run.durationMs / 1000).toFixed(1)}s` : '–'],
-          ['Target URL', <a key="u" href={run.targetUrl} style={{ color: '#2b6cb0', wordBreak: 'break-all', fontSize: 13 }}>{run.targetUrl}</a>],
-          ['Completed', run.completedAt ? new Date(run.completedAt).toLocaleString() : '–'],
-        ].map(([label, value]) => (
-          <div key={String(label)} style={{ background: '#f7fafc', borderRadius: 8, padding: 16 }}>
-            <div style={{ fontSize: 12, color: '#718096', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontWeight: 500 }}>{value}</div>
-          </div>
-        ))}
-      </div>
+      {/* Breadcrumb */}
+      <a
+        href={`/projects/${projectId}/tests/${run.testId}/runs`}
+        style={{ fontSize: 13, color: '#6b7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 20 }}
+      >
+        ← {testLabel}
+      </a>
 
-      {/* Video player — only shown for failed runs that have a bundle */}
-      {run.status === 'failed' && run.snapshotId ? (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>Recording</h2>
-          <video
-            controls
-            style={{ width: '100%', maxWidth: 800, borderRadius: 8, background: '#000' }}
-            src={`${videoApiBase}/video_0.webm`}
-          >
-            Your browser does not support video playback.
-          </video>
+      {/* Status hero */}
+      <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 12, padding: '28px 32px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span style={{ fontSize: 32, color: cfg.color, fontWeight: 700, lineHeight: 1 }}>{cfg.icon}</span>
+          <span style={{ fontSize: 28, fontWeight: 800, color: cfg.color, letterSpacing: '-0.5px' }}>{cfg.label}</span>
         </div>
-      ) : null}
+        <div style={{ fontSize: 18, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
+          {test.description || 'Test run'}
+        </div>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13, color: '#6b7280' }}>
+          <span>Target: <a href={run.targetUrl} style={{ color: '#2563eb' }}>{run.targetUrl}</a></span>
+          {run.completedAt && <span>Ran {fmtDate(run.completedAt)}</span>}
+          {run.durationMs != null && <span>Duration: {fmt(run.durationMs)}</span>}
+        </div>
+      </div>
 
-      {/* Step list */}
-      {steps.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>Steps</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {steps.map((s, i) => {
-              const isFailing = bundle?.failingStep?.lineNo != null && i === steps.length - 1;
-              return (
-                <div key={s.step} style={{ border: `1px solid ${isFailing ? '#e53e3e' : '#e2e8f0'}`, borderRadius: 8, padding: 12, background: isFailing ? '#fff5f5' : '#fff' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8, color: isFailing ? '#e53e3e' : '#1a202c' }}>Step {s.step}{isFailing ? ' — FAILING' : ''}</div>
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <a href={s.screenshotUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#2b6cb0' }}>Screenshot</a>
-                    <a href={s.domSnapshotUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#2b6cb0' }}>DOM snapshot</a>
-                  </div>
-                  {isFailing && bundle?.rootCauseHypothesis && (
-                    <div style={{ marginTop: 12, padding: 12, background: '#fed7d7', borderRadius: 6 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Root cause hypothesis</div>
-                      <div style={{ fontSize: 14, lineHeight: 1.5 }}>{bundle.rootCauseHypothesis}</div>
-                      {bundle.fixTarget && (
-                        <div style={{ marginTop: 8, fontSize: 13, color: '#c53030' }}>
-                          Fix target: {bundle.fixTarget.file} lines {bundle.fixTarget.lineRange[0]}–{bundle.fixTarget.lineRange[1]}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      {/* Failure diagnosis — leads for PM */}
+      {run.status === 'failed' && (
+        <div style={{ border: '1px solid #fecaca', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ background: '#fef2f2', padding: '20px 24px', borderBottom: '1px solid #fecaca' }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#991b1b', margin: '0 0 8px' }}>What went wrong</h2>
+            {bundle?.rootCauseHypothesis ? (
+              <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
+                {bundle.rootCauseHypothesis}
+              </p>
+            ) : (
+              <p style={{ margin: 0, fontSize: 15, color: '#6b7280', lineHeight: 1.65 }}>
+                The test failed but no AI diagnosis is available for this run. Check the technical details below.
+              </p>
+            )}
           </div>
+          {(run.snapshotId) && (
+            <div style={{ padding: '16px 24px', background: '#fff', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <a
+                href={`${apiBase}/v1/artifacts/${runId}/screenshot`}
+                target="_blank" rel="noreferrer"
+                style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+              >
+                View screenshot →
+              </a>
+              <a
+                href={`${apiBase}/v1/artifacts/${runId}/video/video_0.webm`}
+                target="_blank" rel="noreferrer"
+                style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+              >
+                Watch recording →
+              </a>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Stdout / stderr */}
-      {(run.stdout || run.stderr) && (
-        <div>
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>Output</h2>
+      {/* Infra error — different message */}
+      {isInfraError && (
+        <div style={{ border: '1px solid #fde68a', borderRadius: 12, padding: '20px 24px', background: '#fffbeb', marginBottom: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#92400e', margin: '0 0 8px' }}>Runner error</h2>
+          <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
+            The test runner encountered an error before completing. This is not a test failure — try re-running.
+          </p>
+        </div>
+      )}
+
+      {/* Re-run */}
+      <div style={{ marginBottom: 32 }}>
+        <a
+          href={`/projects/${projectId}/tests/${run.testId}/new-run?targetUrl=${encodeURIComponent(run.targetUrl)}`}
+          style={{ display: 'inline-block', background: '#2563eb', color: '#fff', padding: '9px 20px', borderRadius: 7, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
+        >
+          Re-run this test
+        </a>
+      </div>
+
+      {/* Technical details — collapsed for PMs, open for devs */}
+      <details style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <summary style={{ padding: '14px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14, color: '#374151', background: '#f9fafb', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Technical details
+          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>stdout · stderr · run ID</span>
+        </summary>
+        <div style={{ padding: '20px', background: '#fff' }}>
+          <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16, fontFamily: 'monospace' }}>Run ID: {runId}</div>
           {run.stdout && (
-            <pre style={{ background: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: 12, fontSize: 12, overflow: 'auto', marginBottom: 12 }}>
-              {run.stdout}
-            </pre>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>stdout</div>
+              <pre style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12, fontSize: 12, overflow: 'auto', margin: 0 }}>{run.stdout}</pre>
+            </div>
           )}
           {run.stderr && (
-            <pre style={{ background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: 6, padding: 12, fontSize: 12, overflow: 'auto', color: '#c53030' }}>
-              {run.stderr}
-            </pre>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#dc2626', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>stderr</div>
+              <pre style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: 12, fontSize: 12, overflow: 'auto', margin: 0, color: '#991b1b' }}>{run.stderr}</pre>
+            </div>
+          )}
+          {!run.stdout && !run.stderr && (
+            <p style={{ margin: 0, fontSize: 14, color: '#9ca3af' }}>No output captured for this run.</p>
           )}
         </div>
-      )}
+      </details>
+
     </div>
   );
 }
