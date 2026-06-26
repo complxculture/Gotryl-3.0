@@ -1,0 +1,87 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+
+/* ── Landing nav ── */
+.nav-desktop-links { display: flex; align-items: center; gap: 24px; }
+.nav-desktop-ctas  { display: flex; align-items: center; gap: 10px; }
+.nav-mobile-btn    { display: none; background: none; border: none; cursor: pointer; padding: 8px; font-size: 22px; color: #374151; line-height: 1; }
+.nav-mobile-menu   { display: none; flex-direction: column; gap: 0; border-top: 1px solid #e5e7eb; background: #fff; padding: 8px 0; }
+.nav-mobile-menu a,
+.nav-mobile-menu button { display: block; padding: 14px 24px; font-size: 15px; color: #111827; text-decoration: none; font-weight: 500; background: none; border: none; width: 100%; text-align: left; cursor: pointer; }
+.nav-mobile-menu .nav-cta { background: #2563eb; color: #fff; font-weight: 700; border-radius: 0; text-align: center; }
+
+/* ── Auth header ── */
+.auth-nav         { display: flex; align-items: center; gap: 16px; }
+.auth-mobile-btn  { display: none; background: none; border: none; cursor: pointer; padding: 8px; font-size: 22px; color: #374151; line-height: 1; }
+.auth-mobile-menu { display: none; flex-direction: column; border-top: 1px solid #e5e7eb; background: #fff; }
+.auth-mobile-menu a { display: block; padding: 14px 20px; font-size: 15px; color: #111827; text-decoration: none; font-weight: 500; border-bottom: 1px solid #f3f4f6; }
+.auth-mobile-menu form { border-bottom: 1px solid #f3f4f6; }
+.auth-mobile-menu form button { display: block; width: 100%; padding: 14px 20px; font-size: 15px; color: #dc2626; background: none; border: none; cursor: pointer; text-align: left; font-weight: 500; }
+
+/* ── Table responsive ── */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll table { min-width: 600px; }
+
+/* ── Landing responsive ── */
+@media (max-width: 768px) {
+  /* Nav */
+  .nav-desktop-links { display: none !important; }
+  .nav-desktop-ctas  { display: none !important; }
+  .nav-mobile-btn    { display: flex !important; align-items: center; }
+
+  /* Grids → single column */
+  .grid-2col { grid-template-columns: 1fr !important; }
+  .grid-4col { grid-template-columns: 1fr 1fr !important; }
+  .grid-footer { grid-template-columns: 1fr 1fr !important; }
+
+  /* Hero */
+  .hero-section  { padding: 56px 20px 0 !important; }
+  .hero-h1       { font-size: 34px !important; letter-spacing: -0.8px !important; }
+  .hero-subtitle { font-size: 16px !important; }
+  .hero-ctas     { flex-direction: column !important; }
+  .hero-ctas a   { text-align: center; }
+  .hero-terminal { margin: 0 -4px; border-radius: 8px 8px 0 0 !important; }
+
+  /* Works with */
+  .works-with-strip { flex-wrap: wrap !important; gap: 8px !important; justify-content: flex-start !important; }
+
+  /* Before/after */
+  .before-after { grid-template-columns: 1fr !important; }
+
+  /* Sections */
+  .section-pad { padding: 56px 20px !important; }
+  .section-inner { padding: 0 !important; }
+
+  /* CTA section */
+  .cta-btns { flex-direction: column !important; }
+  .cta-btns a { text-align: center; }
+
+  /* Footer */
+  .footer-inner { padding: 36px 20px 24px !important; }
+  .footer-bottom { flex-direction: column !important; gap: 8px !important; }
+
+  /* Auth */
+  .auth-header-inner { padding: 0 16px !important; }
+  .auth-nav          { display: none !important; }
+  .auth-mobile-btn   { display: flex !important; align-items: center; }
+  .auth-main         { padding: 0 16px !important; }
+
+  /* Two-col layout (CLI section) */
+  .two-col { grid-template-columns: 1fr !important; }
+
+  /* How it works cards */
+  .how-it-works-grid { grid-template-columns: 1fr !important; }
+
+  /* Use cases */
+  .use-cases-grid { grid-template-columns: 1fr !important; }
+
+  /* Form rows */
+  .form-row { flex-direction: column !important; }
+  .form-row input { width: 100% !important; }
+  .form-row button { width: 100% !important; }
+
+  /* Test page header */
+  .tests-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+  .tests-form   { width: 100% !important; }
+  .tests-form input  { flex: 1; min-width: 0 !important; }
+}

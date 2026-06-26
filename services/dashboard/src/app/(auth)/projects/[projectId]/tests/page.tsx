@@ -2,21 +2,26 @@ import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
 import { createTestAction } from '../../../actions';
 
+const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
+  passed: { color: '#15803d', bg: '#dcfce7' },
+  failed: { color: '#dc2626', bg: '#fee2e2' },
+  error:  { color: '#d97706', bg: '#fef3c7' },
+};
+
 function statusBadge(status: string) {
-  const colors: Record<string, string> = { passed: '#38a169', failed: '#e53e3e', error: '#dd6b20', pending: '#718096' };
-  const bg = colors[status] ?? '#718096';
-  return <span style={{ background: bg, color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>{status}</span>;
+  const s = STATUS_COLORS[status] ?? { color: '#6b7280', bg: '#f3f4f6' };
+  return (
+    <span style={{ background: s.bg, color: s.color, borderRadius: 5, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>
+      {status}
+    </span>
+  );
 }
 
 export default async function TestsPage({ params }: { params: { projectId: string } }) {
   const { projectId } = params;
 
   let client;
-  try {
-    client = getClient();
-  } catch {
-    redirect('/login');
-  }
+  try { client = getClient(); } catch { redirect('/login'); }
 
   const [project, tests] = await Promise.all([
     client.projects.get(projectId),
@@ -38,66 +43,67 @@ export default async function TestsPage({ params }: { params: { projectId: strin
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      {/* Header — stacks on mobile */}
+      <div className="tests-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 16 }}>
         <div>
-          <a href="/projects" style={{ color: '#718096', fontSize: 14 }}>← Projects</a>
-          <h1 style={{ fontSize: 22, margin: '8px 0' }}>{project.name}</h1>
-          <div style={{ fontSize: 13, color: '#718096' }}>{project.id}</div>
+          <a href="/projects" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>← Projects</a>
+          <h1 style={{ fontSize: 20, fontWeight: 800, margin: '6px 0 2px', letterSpacing: '-0.3px' }}>{project.name}</h1>
+          <div style={{ fontSize: 12, color: '#9ca3af' }} title={project.id}>{project.id}</div>
         </div>
-        <form action={createTestAction} style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <form className="tests-form" action={createTestAction} style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <input type="hidden" name="projectId" value={projectId} />
           <input
             name="description"
-            placeholder="Test description…"
+            placeholder="Describe a test…"
             required
-            style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 14, width: 280 }}
+            style={{ padding: '7px 12px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 14, width: 260 }}
           />
-          <button type="submit" style={{ background: '#2b6cb0', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 14, cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap' }}>
+          <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 14, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
             New test
           </button>
         </form>
       </div>
 
+      {/* Empty state */}
       {tests.length === 0 ? (
-        <p style={{ color: '#718096' }}>No tests yet. Describe one above to create your first test.</p>
+        <div style={{ textAlign: 'center', padding: '48px 24px', border: '2px dashed #e5e7eb', borderRadius: 12 }}>
+          <p style={{ color: '#6b7280', fontSize: 15, margin: 0 }}>No tests yet — describe one above to get started.</p>
+        </div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-              <th style={{ padding: '8px 12px' }}>Description</th>
-              <th style={{ padding: '8px 12px' }}>Last Result</th>
-              <th style={{ padding: '8px 12px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tests.map((t) => {
-              const latestRun = latestRunMap.get(t.id);
-              return (
-                <tr key={t.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ fontWeight: 500 }}>{t.description}</div>
-                    <div style={{ fontSize: 12, color: '#718096' }}>{t.id}</div>
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    {latestRun ? statusBadge(latestRun.status) : <span style={{ color: '#718096', fontSize: 13 }}>No runs</span>}
-                  </td>
-                  <td style={{ padding: '10px 12px', fontSize: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <a
-                      href={`/projects/${projectId}/tests/${t.id}/new-run${latestRun?.targetUrl ? `?targetUrl=${encodeURIComponent(latestRun.targetUrl)}` : ''}`}
-                      style={{ background: '#2b6cb0', color: '#fff', padding: '4px 12px', borderRadius: 5, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}
-                    >
-                      Run
-                    </a>
-                    <a href={`/projects/${projectId}/tests/${t.id}/runs`} style={{ color: '#2b6cb0' }}>History</a>
-                    {t.generatedCode && (
-                      <a href={`/projects/${projectId}/tests/${t.id}/code`} style={{ color: '#2b6cb0' }}>Source</a>
+        /* Card list — works on all screen sizes */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {tests.map((t) => {
+            const latestRun = latestRunMap.get(t.id);
+            const runUrl = `/projects/${projectId}/tests/${t.id}/new-run${latestRun?.targetUrl ? `?targetUrl=${encodeURIComponent(latestRun.targetUrl)}` : ''}`;
+            return (
+              <div key={t.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#111827', marginBottom: 4 }}>{t.description}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{t.id}</div>
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    {latestRun ? statusBadge(latestRun.status) : (
+                      <span style={{ fontSize: 12, color: '#9ca3af' }}>No runs yet</span>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <a
+                    href={runUrl}
+                    style={{ background: '#2563eb', color: '#fff', padding: '5px 14px', borderRadius: 6, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}
+                  >
+                    Run
+                  </a>
+                  <a href={`/projects/${projectId}/tests/${t.id}/runs`} style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>History</a>
+                  {t.generatedCode && (
+                    <a href={`/projects/${projectId}/tests/${t.id}/code`} style={{ fontSize: 13, color: '#6b7280', textDecoration: 'none' }}>View code</a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
