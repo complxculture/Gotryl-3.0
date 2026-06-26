@@ -72,6 +72,19 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         </div>
       </div>
 
+      {/* Passed — plain English summary */}
+      {run.status === 'passed' && (
+        <div style={{ border: '1px solid #bbf7d0', borderRadius: 12, padding: '20px 24px', background: '#f0fdf4', marginBottom: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#15803d', margin: '0 0 8px' }}>What happened</h2>
+          <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
+            Gotryl opened a real browser, navigated to <strong>{run.targetUrl}</strong>, and ran your test: &ldquo;{test.description || 'unnamed test'}&rdquo;. Every step completed without errors — your test passed.
+          </p>
+          <p style={{ margin: '10px 0 0', fontSize: 13, color: '#16a34a', lineHeight: 1.5 }}>
+            Watch the recording below to see exactly what the browser did.
+          </p>
+        </div>
+      )}
+
       {/* Failure diagnosis — leads for PM */}
       {run.status === 'failed' && (
         <div style={{ border: '1px solid #fecaca', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
@@ -92,22 +105,21 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
 
       {/* Recording — available for all completed runs */}
       {!isLive && run.status !== 'error' && (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 20px', marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Artifacts:</span>
+        <div style={{ marginBottom: 24 }}>
           <a
             href={`/api/artifacts/${runId}/video`}
             target="_blank" rel="noreferrer"
-            style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#1e293b', color: '#fff', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
           >
-            Watch recording →
+            ▶ Watch browser recording
           </a>
           {run.snapshotId && (
             <a
               href={`${apiBase}/v1/artifacts/${runId}/steps/0/screenshot`}
               target="_blank" rel="noreferrer"
-              style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 12, background: '#f3f4f6', color: '#374151', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
             >
-              View screenshot →
+              View screenshot
             </a>
           )}
         </div>
