@@ -27,7 +27,7 @@ npm install -g @gotryl/cli
 
 ```bash
 gotryl setup
-# Enter your API key when prompted (get one at gotryl.com)
+# Enter your API key when prompted (get one at gotryl.com → Settings → API Keys)
 ```
 
 ### Run your first test
@@ -35,7 +35,7 @@ gotryl setup
 ```bash
 # Create a project
 gotryl project create --name "My App"
-# → Created project: My App (prj_xxxxxxxxxxxx)
+# → Created project: prj_xxxxxxxxxxxx
 
 # Create a test
 gotryl test create \
@@ -43,32 +43,71 @@ gotryl test create \
   --description "user can sign up with email and see the dashboard"
 # → Created test tst_xxxxxxxxxxxx
 
-# Run it
+# Run it and wait for results
 gotryl test run tst_xxxxxxxxxxxx \
   --target-url https://myapp.com \
   --wait
-# → ✓ Run passed (4231ms)
+# → Run run_xxxxxxxxxxxx: passed (4231ms)
+# → Run saved → .gotryl/runs/run_xxxxxxxxxxxx/
 ```
+
+On a failed run, the CLI prints the AI root-cause hypothesis and saves `summary.md`, `summary.json`, and the browser recording to `.gotryl/runs/<run-id>/`.
 
 ---
 
 ## CLI reference
 
+### Projects
+
 ```
 gotryl project create  --name <name>
 gotryl project list
-
-gotryl test create     --project <id> --description <text>
-gotryl test list       --project <id>
-gotryl test run        <testId> --target-url <url> [--wait] [--output json]
-
-gotryl run list        --test <id>
-gotryl run get         <runId>
-
-gotryl setup           [--from-env] [--yes]
+gotryl project get     <projectId>
 ```
 
-Pass `--output json` to any command for machine-readable output.
+### Tests
+
+```
+gotryl test create     --project <id> --description <text>
+gotryl test list       --project <id>
+gotryl test get        <testId>
+gotryl test update     <testId> --description <text>
+```
+
+### Running tests
+
+```
+gotryl test run        <testId> --target-url <url> [--wait] [--output json]
+gotryl test run        --project <id> --target-url <url> [--wait]   # run all tests in a project
+gotryl test rerun      <testId> [--target-url <url>] [--wait]
+gotryl test wait       <runId>                                       # poll an existing run
+gotryl test result     <testId> [--history]                          # latest run result
+```
+
+### Generated code
+
+```
+gotryl test code get   <testId>              # view generated Playwright source
+gotryl test code put   <testId> --file <path> --etag <etag>   # replace source
+gotryl test code steps <testId>              # list step screenshots/DOM snapshots
+```
+
+### Failures & artifacts
+
+```
+gotryl test failure get     <testId>         # full AI failure bundle
+gotryl test failure summary <testId>         # root cause + fix target only
+gotryl test artifact get    <runId>          # download run artifacts
+```
+
+### Other
+
+```
+gotryl setup           [--from-env] [--yes]  # authenticate
+gotryl logout                                # clear saved credentials
+```
+
+Pass `--output json` to any command for machine-readable output (useful in scripts and CI).
 
 ---
 
@@ -76,9 +115,9 @@ Pass `--output json` to any command for machine-readable output.
 
 Copy [`examples/gotryl-ci.yml`](examples/gotryl-ci.yml) into your `.github/workflows/` directory.
 
-Add two secrets/variables to your repository:
+Add these to your repository secrets/variables:
 
-| Name | Where | Value |
+| Name | Type | Value |
 |---|---|---|
 | `GOTRYL_API_KEY` | Secret | Your API key |
 | `GOTRYL_PROJECT_ID` | Variable | `prj_xxxxxxxxxxxx` |
@@ -142,24 +181,24 @@ examples/
 ### Prerequisites
 
 - Docker + Docker Compose
-- A domain with Cloudflare DNS (Flexible SSL mode)
-- Cloudflare R2 bucket for artifact storage (screenshots, video)
+- A domain pointing to your server (A record)
+- Cloudflare R2 bucket with an API token that has **Admin Read & Write** permissions
 
 ### Environment variables
 
 Create a `.env` file at the repo root:
 
 ```env
-DATABASE_URL=postgresql://gotryl:password@postgres:5432/gotryl
-REDIS_URL=redis://redis:6379
+DOMAIN=gotryl.com
+POSTGRES_PASSWORD=change-me
+INTERNAL_SERVICE_SECRET=change-me-random-32-chars
+
 ANTHROPIC_API_KEY=sk-ant-...
-R2_ACCOUNT_ID=...
+
+R2_BUCKET=gotryl-artifacts
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
-R2_BUCKET=gotryl-artifacts
-R2_PUBLIC_URL=https://pub-xxxx.r2.dev
-JWT_SECRET=change-me-32-chars-minimum
-DOMAIN=gotryl.com
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 ```
 
 ### Deploy
@@ -168,9 +207,9 @@ DOMAIN=gotryl.com
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Services: `postgres`, `redis`, `migrate` (runs once), `api`, `executor`, `dashboard`, `caddy`
+Services: `postgres`, `redis`, `migrate` (runs once on startup), `api`, `executor`, `dashboard`, `caddy`
 
-Only Caddy exposes ports 80/443. Configure Cloudflare to proxy your domain to the server IP in Flexible SSL mode.
+Caddy automatically provisions a Let's Encrypt TLS certificate for your domain on first request. Only ports 80 and 443 are exposed.
 
 ---
 
@@ -187,12 +226,16 @@ docker compose up -d postgres redis
 # Run migrations
 pnpm --filter @gotryl/api db:migrate
 
-# Start services
+# Start services (in separate terminals)
 pnpm --filter @gotryl/api dev       # http://localhost:3001
 pnpm --filter @gotryl/dashboard dev # http://localhost:3000
 ```
 
-The executor runs as a Docker container — build it with `docker compose build executor`.
+The executor runs as a Docker container — build and start it with:
+
+```bash
+docker compose build executor && docker compose up -d executor
+```
 
 ---
 
