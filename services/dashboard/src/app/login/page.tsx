@@ -24,7 +24,7 @@ function LoginForm() {
         const data = await res.json() as { error?: string };
         setError(data.error ?? 'Invalid API key');
       } else {
-        router.push(params.get('from') ?? '/projects');
+        window.location.href = params.get('from') ?? '/projects';
       }
     } catch {
       setError('Network error. Please try again.');

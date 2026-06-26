@@ -74,12 +74,12 @@ function OnboardingSuccess({ apiKey }: { apiKey: string }) {
 
       {/* CTAs */}
       <div style={{ display: 'flex', gap: 10 }}>
-        <Link
+        <a
           href="/projects"
           style={{ flex: 1, background: '#2563eb', color: '#fff', padding: '11px', borderRadius: 7, textDecoration: 'none', fontSize: 15, fontWeight: 700, textAlign: 'center' }}
         >
           Go to dashboard →
-        </Link>
+        </a>
         <Link
           href="/login"
           style={{ padding: '11px 20px', borderRadius: 7, textDecoration: 'none', fontSize: 15, fontWeight: 500, color: '#6b7280', border: '1px solid #e5e7eb', textAlign: 'center' }}
@@ -115,7 +115,14 @@ export default function SignupPage() {
           setError(data.error ?? 'Something went wrong');
         }
       } else {
-        setApiKey(data.key ?? '');
+        const key = data.key ?? '';
+        // Auto-login so "Go to dashboard" works without entering the key again
+        await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: key }),
+        });
+        setApiKey(key);
       }
     } catch {
       setError('Network error. Please try again.');
