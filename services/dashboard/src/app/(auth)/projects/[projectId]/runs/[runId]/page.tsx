@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getClient } from '@/lib/session';
+import { getClient, getSessionApiKey, BASE_URL } from '@/lib/session';
 import type { FailureBundle } from '@gotryl/sdk';
 import { RunPoller } from './RunPoller';
 import { LiveRunProgress } from './LiveRunProgress';
@@ -42,6 +42,17 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
 
   const isLive = run.status === 'queued' || run.status === 'running';
 
+  let hasVideo = false;
+  if (!isLive && run.status !== 'error') {
+    try {
+      const apiKey = getSessionApiKey();
+      const r = await fetch(`${BASE_URL}/v1/artifacts/${runId}/video/exists`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (r.ok) hasVideo = ((await r.json()) as { exists: boolean }).exists;
+    } catch { /* best effort */ }
+  }
+
   return (
     <div style={{ maxWidth: 800 }}>
       <RunPoller status={run.status} />
@@ -79,9 +90,11 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
           <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
             Gotryl opened a real browser, navigated to <strong>{run.targetUrl}</strong>, and ran your test: &ldquo;{test.description || 'unnamed test'}&rdquo;. Every step completed without errors — your test passed.
           </p>
-          <p style={{ margin: '10px 0 0', fontSize: 13, color: '#16a34a', lineHeight: 1.5 }}>
-            Watch the recording below to see exactly what the browser did.
-          </p>
+          {hasVideo && (
+            <p style={{ margin: '10px 0 0', fontSize: 13, color: '#16a34a', lineHeight: 1.5 }}>
+              Watch the recording below to see exactly what the browser did.
+            </p>
+          )}
         </div>
       )}
 
@@ -103,8 +116,8 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         </div>
       )}
 
-      {/* Recording — available for all completed runs */}
-      {!isLive && run.status !== 'error' && (
+      {/* Recording — only when video was actually uploaded to R2 */}
+      {hasVideo && (
         <div style={{ marginBottom: 24 }}>
           <a
             href={`/api/artifacts/${runId}/video`}

@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 function makeR2Client(): S3Client {
@@ -32,6 +32,16 @@ export async function fetchJsonFromR2(key: string): Promise<Record<string, unkno
 
 export async function fetchFailureBundle(runId: string): Promise<Record<string, unknown> | null> {
   return fetchJsonFromR2(`runs/${runId}/failure-bundle.json`);
+}
+
+export async function r2ObjectExists(key: string): Promise<boolean> {
+  if (!isR2Configured()) return false;
+  try {
+    await makeR2Client().send(new HeadObjectCommand({ Bucket: process.env.R2_BUCKET ?? '', Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function getR2PresignedUrl(key: string, expiresIn = 3600): Promise<string | null> {
