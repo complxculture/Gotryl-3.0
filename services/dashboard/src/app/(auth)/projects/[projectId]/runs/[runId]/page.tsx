@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
 import type { FailureBundle } from '@gotryl/sdk';
 import { RunPoller } from './RunPoller';
+import { LiveRunProgress } from './LiveRunProgress';
 
 function fmt(ms: number) { return `${(ms / 1000).toFixed(1)}s`; }
 function fmtDate(d: string) {
@@ -53,12 +54,7 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         ← {testLabel}
       </a>
 
-      {isLive && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 13, color: '#6b7280' }}>
-          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#2563eb', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          {run.status === 'running' ? 'Test is running… refreshing automatically' : 'Waiting in queue… refreshing automatically'}
-        </div>
-      )}
+      {isLive && <LiveRunProgress createdAt={run.createdAt} />}
 
       {/* Status hero */}
       <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 12, padding: '28px 32px', marginBottom: 24 }}>
@@ -139,8 +135,8 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         </div>
       )}
 
-      {/* Technical details — collapsed for PMs, open for devs */}
-      <details style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+      {/* Technical details — auto-open when live so stdout appears immediately on completion */}
+      <details open={isLive || undefined} style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
         <summary style={{ padding: '14px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14, color: '#374151', background: '#f9fafb', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           Technical details
           <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 400 }}>stdout · stderr · run ID</span>

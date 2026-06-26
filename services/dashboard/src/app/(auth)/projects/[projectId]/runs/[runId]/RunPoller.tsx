@@ -7,7 +7,7 @@ export function RunPoller({ status }: { status: string }) {
 
   useEffect(() => {
     if (status !== 'queued' && status !== 'running') return;
-    const id = setInterval(() => router.refresh(), 2500);
+    const id = setInterval(() => router.refresh(), 1500);
     return () => clearInterval(id);
   }, [status, router]);
 
