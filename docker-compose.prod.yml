@@ -79,6 +79,7 @@ services:
       dockerfile: infra/Dockerfile.dashboard
     restart: unless-stopped
     environment:
+      GOTRYL_API_URL: http://api:3001
       NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
       PORT: 3000
     depends_on:

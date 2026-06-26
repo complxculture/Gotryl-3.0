@@ -108,8 +108,15 @@ export default function SignupPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json() as { key?: string; error?: string };
-      if (!res.ok) setError(data.error ?? 'Something went wrong');
-      else setApiKey(data.key ?? '');
+      if (!res.ok) {
+        if (res.status === 409) {
+          setError('An account already exists for this email. Sign in with your existing API key instead.');
+        } else {
+          setError(data.error ?? 'Something went wrong');
+        }
+      } else {
+        setApiKey(data.key ?? '');
+      }
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -135,7 +142,16 @@ export default function SignupPage() {
           required
           style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
         />
-        {error && <p style={{ color: '#dc2626', marginTop: 8, fontSize: 14 }}>{error}</p>}
+        {error && (
+          <div style={{ marginTop: 8 }}>
+            <p style={{ color: '#dc2626', fontSize: 14, margin: 0 }}>{error}</p>
+            {error.includes('already exists') && (
+              <Link href="/login" style={{ display: 'inline-block', marginTop: 8, fontSize: 13, color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>
+                → Go to sign in
+              </Link>
+            )}
+          </div>
+        )}
         <button
           type="submit"
           disabled={loading}

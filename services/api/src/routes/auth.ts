@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/client.js';
 import { apiKeys } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 const CreateKeyBody = z.object({
   accountId: z.string().min(1),
@@ -63,6 +64,22 @@ export const authRoute: FastifyPluginAsync = async (app) => {
     }
 
     const { email } = parsed.data;
+
+    const [existing] = await db
+      .select({ accountId: apiKeys.accountId })
+      .from(apiKeys)
+      .where(eq(apiKeys.email, email))
+      .limit(1);
+
+    if (existing) {
+      return reply.code(409).send({
+        error: {
+          code: 'EMAIL_TAKEN',
+          message: 'An account already exists for this email. Sign in with your existing API key, or generate a new one from your API Keys settings.',
+        },
+      });
+    }
+
     const accountId = `acc_${nanoid(16)}`;
     const rawKey = `gk_${nanoid(32)}`;
     const keyHash = createHash('sha256').update(rawKey).digest('hex');

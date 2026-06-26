@@ -93,7 +93,7 @@ export function startRunWorker(): Worker<RunJobData> {
         })
         .where(eq(runs.id, runId));
     },
-    { connection },
+    { connection, prefix: 'gotryl' },
   );
 
   // Safety net: if the job processor itself throws (e.g. first DB update fails),

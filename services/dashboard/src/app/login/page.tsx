@@ -70,10 +70,11 @@ function LoginForm() {
           </Link>
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Need your API key?</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Lost your API key?</div>
           <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.6 }}>
-            Ask the developer on your team to share one from their{' '}
-            <Link href="/settings/keys" style={{ color: '#2563eb', textDecoration: 'none' }}>API Keys</Link> page.
+            If you still have access to your account, go to{' '}
+            <strong>Settings → API Keys</strong> to generate a new one. Otherwise, contact your team admin or{' '}
+            <Link href="/signup" style={{ color: '#2563eb', textDecoration: 'none' }}>create a new account</Link>.
           </p>
         </div>
       </div>

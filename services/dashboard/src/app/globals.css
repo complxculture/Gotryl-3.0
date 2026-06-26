@@ -1,6 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; }
 
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
 /* ── Landing nav ── */
 .nav-desktop-links { display: flex; align-items: center; gap: 24px; }
 .nav-desktop-ctas  { display: flex; align-items: center; gap: 10px; }

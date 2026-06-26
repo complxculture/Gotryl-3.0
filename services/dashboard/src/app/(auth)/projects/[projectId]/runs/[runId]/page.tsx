@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
 import type { FailureBundle } from '@gotryl/sdk';
+import { RunPoller } from './RunPoller';
 
 function fmt(ms: number) { return `${(ms / 1000).toFixed(1)}s`; }
 function fmtDate(d: string) {
@@ -31,15 +32,18 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
     try { bundle = await client.failures.getArtifacts(runId); } catch { /* no bundle */ }
   }
 
-  const apiBase = process.env.GOTRYL_API_URL ?? 'https://api.gotryl.com';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? process.env.GOTRYL_API_URL ?? 'http://localhost:3001';
   const cfg = STATUS_CONFIG[run.status] ?? STATUS_CONFIG.queued;
   const testLabel = test.description
     ? (test.description.length > 60 ? test.description.slice(0, 57) + '…' : test.description)
     : run.testId;
   const isInfraError = run.status === 'error';
 
+  const isLive = run.status === 'queued' || run.status === 'running';
+
   return (
     <div style={{ maxWidth: 800 }}>
+      <RunPoller status={run.status} />
 
       {/* Breadcrumb */}
       <a
@@ -48,6 +52,13 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
       >
         ← {testLabel}
       </a>
+
+      {isLive && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 13, color: '#6b7280' }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#2563eb', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          {run.status === 'running' ? 'Test is running… refreshing automatically' : 'Waiting in queue… refreshing automatically'}
+        </div>
+      )}
 
       {/* Status hero */}
       <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 12, padding: '28px 32px', marginBottom: 24 }}>
@@ -111,15 +122,17 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         </div>
       )}
 
-      {/* Re-run */}
-      <div style={{ marginBottom: 32 }}>
-        <a
-          href={`/projects/${projectId}/tests/${run.testId}/new-run?targetUrl=${encodeURIComponent(run.targetUrl)}`}
-          style={{ display: 'inline-block', background: '#2563eb', color: '#fff', padding: '9px 20px', borderRadius: 7, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
-        >
-          Re-run this test
-        </a>
-      </div>
+      {/* Re-run — only show once test is finished */}
+      {!isLive && (
+        <div style={{ marginBottom: 32 }}>
+          <a
+            href={`/projects/${projectId}/tests/${run.testId}/new-run?targetUrl=${encodeURIComponent(run.targetUrl)}`}
+            style={{ display: 'inline-block', background: '#2563eb', color: '#fff', padding: '9px 20px', borderRadius: 7, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
+          >
+            Re-run this test
+          </a>
+        </div>
+      )}
 
       {/* Technical details — collapsed for PMs, open for devs */}
       <details style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>

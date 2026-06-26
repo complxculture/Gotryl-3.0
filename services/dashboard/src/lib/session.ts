@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { GotrylClient } from '@gotryl/sdk';
 
 const SESSION_COOKIE = 'gotryl_session';
-const BASE_URL = process.env.GOTRYL_API_URL ?? 'https://api.gotryl.com';
+const BASE_URL = process.env.GOTRYL_API_URL ?? 'http://localhost:3001';
 
 export function getSessionApiKey(): string | null {
   const cookieStore = cookies();

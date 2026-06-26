@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(_request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3001'));
+  const response = NextResponse.json({ ok: true });
   response.cookies.delete(SESSION_COOKIE);
   return response;
 }
