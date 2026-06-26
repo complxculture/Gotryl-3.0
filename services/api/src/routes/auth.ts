@@ -92,4 +92,26 @@ export const authRoute: FastifyPluginAsync = async (app) => {
       createdAt: request.account.createdAt,
     });
   });
+
+  app.post('/v1/auth/me/keys', async (request, reply) => {
+    const rawKey = `gk_${nanoid(32)}`;
+    const keyHash = createHash('sha256').update(rawKey).digest('hex');
+
+    const [inserted] = await db
+      .insert(apiKeys)
+      .values({ accountId: request.account.accountId, email: request.account.email, keyHash })
+      .returning();
+
+    if (!inserted) {
+      return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create API key' } });
+    }
+
+    return reply.code(201).send({
+      id: inserted.id,
+      accountId: inserted.accountId,
+      email: inserted.email,
+      createdAt: inserted.createdAt,
+      key: rawKey,
+    });
+  });
 };

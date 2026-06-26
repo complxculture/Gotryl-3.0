@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
+import { createProjectAction } from '../actions';
 
 export default async function ProjectsPage() {
   let client;
@@ -29,7 +30,20 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 22, marginBottom: 16 }}>Projects</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, margin: 0 }}>Projects</h1>
+        <form action={createProjectAction} style={{ display: 'flex', gap: 8 }}>
+          <input
+            name="name"
+            placeholder="Project name"
+            required
+            style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 14, width: 200 }}
+          />
+          <button type="submit" style={{ background: '#2b6cb0', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>
+            New project
+          </button>
+        </form>
+      </div>
       {projects.length === 0 ? (
         <p style={{ color: '#718096' }}>No projects yet. Create one via the CLI: <code>gotryl project create --name &quot;My App&quot;</code></p>
       ) : (

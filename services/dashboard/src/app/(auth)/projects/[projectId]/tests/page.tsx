@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getClient } from '@/lib/session';
+import { createTestAction } from '../../../actions';
 
 function statusBadge(status: string) {
   const colors: Record<string, string> = { passed: '#38a169', failed: '#e53e3e', error: '#dd6b20', pending: '#718096' };
@@ -37,14 +38,28 @@ export default async function TestsPage({ params }: { params: { projectId: strin
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <a href="/projects" style={{ color: '#718096', fontSize: 14 }}>← Projects</a>
-        <h1 style={{ fontSize: 22, margin: '8px 0' }}>{project.name}</h1>
-        <div style={{ fontSize: 13, color: '#718096' }}>{project.id}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <a href="/projects" style={{ color: '#718096', fontSize: 14 }}>← Projects</a>
+          <h1 style={{ fontSize: 22, margin: '8px 0' }}>{project.name}</h1>
+          <div style={{ fontSize: 13, color: '#718096' }}>{project.id}</div>
+        </div>
+        <form action={createTestAction} style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <input type="hidden" name="projectId" value={projectId} />
+          <input
+            name="description"
+            placeholder="Test description…"
+            required
+            style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 14, width: 280 }}
+          />
+          <button type="submit" style={{ background: '#2b6cb0', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 14, cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            New test
+          </button>
+        </form>
       </div>
 
       {tests.length === 0 ? (
-        <p style={{ color: '#718096' }}>No tests yet. Create one via the CLI: <code>gotryl test create --project {projectId} --description &quot;...&quot;</code></p>
+        <p style={{ color: '#718096' }}>No tests yet. Describe one above to create your first test.</p>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -66,8 +81,14 @@ export default async function TestsPage({ params }: { params: { projectId: strin
                   <td style={{ padding: '10px 12px' }}>
                     {latestRun ? statusBadge(latestRun.status) : <span style={{ color: '#718096', fontSize: 13 }}>No runs</span>}
                   </td>
-                  <td style={{ padding: '10px 12px', fontSize: 14 }}>
-                    <a href={`/projects/${projectId}/tests/${t.id}/runs`} style={{ color: '#2b6cb0', marginRight: 12 }}>Run history</a>
+                  <td style={{ padding: '10px 12px', fontSize: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <a
+                      href={`/projects/${projectId}/tests/${t.id}/new-run${latestRun?.targetUrl ? `?targetUrl=${encodeURIComponent(latestRun.targetUrl)}` : ''}`}
+                      style={{ background: '#2b6cb0', color: '#fff', padding: '4px 12px', borderRadius: 5, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}
+                    >
+                      Run
+                    </a>
+                    <a href={`/projects/${projectId}/tests/${t.id}/runs`} style={{ color: '#2b6cb0' }}>History</a>
                     {t.generatedCode && (
                       <a href={`/projects/${projectId}/tests/${t.id}/code`} style={{ color: '#2b6cb0' }}>Source</a>
                     )}
