@@ -47,7 +47,7 @@ export function startRunWorker(): Worker<RunJobData> {
             'x-internal-secret': process.env.INTERNAL_SERVICE_SECRET ?? '',
           },
           body: JSON.stringify({ runId, testCode: testCode ?? null, testDescription, targetUrl }),
-          signal: AbortSignal.timeout(130_000),
+          signal: AbortSignal.timeout(300_000),
         });
 
         if (!resp.ok) {

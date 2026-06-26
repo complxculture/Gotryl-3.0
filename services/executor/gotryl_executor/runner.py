@@ -118,7 +118,7 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                 preexec_fn=os.setsid,
             )
             try:
-                stdout, stderr = proc.communicate(timeout=120)
+                stdout, stderr = proc.communicate(timeout=240)
                 returncode = proc.returncode
             except subprocess.TimeoutExpired:
                 try:
@@ -126,7 +126,7 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                 except ProcessLookupError:
                     proc.kill()
                 proc.communicate()
-                logger.error('Test execution timed out after 120 seconds')
+                logger.error('Test execution timed out after 240 seconds')
                 return {
                     'status': 'error',
                     'steps': [],
