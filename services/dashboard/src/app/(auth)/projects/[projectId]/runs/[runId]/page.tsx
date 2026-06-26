@@ -95,7 +95,7 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 20px', marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Artifacts:</span>
           <a
-            href={`${apiBase}/v1/artifacts/${runId}/video/video_0.webm`}
+            href={`/api/artifacts/${runId}/video`}
             target="_blank" rel="noreferrer"
             style={{ fontSize: 14, color: '#2563eb', fontWeight: 500, textDecoration: 'none' }}
           >

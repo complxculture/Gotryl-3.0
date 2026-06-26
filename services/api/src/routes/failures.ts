@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/client.js';
 import { runs, tests } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
-import { fetchFailureBundle, streamR2Object } from '../lib/r2.js';
+import { fetchFailureBundle, streamR2Object, getR2PresignedUrl } from '../lib/r2.js';
 
 export const failuresRoute: FastifyPluginAsync = async (app) => {
   // GET /v1/failures/:testId — full bundle for the latest failed run of a test
@@ -157,6 +157,29 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
     reply.header('Content-Type', 'text/html; charset=utf-8');
     reply.header('Cache-Control', 'public, max-age=3600');
     return reply.send(stream.body);
+  });
+
+  // GET /v1/artifacts/:runId/video/url — return a short-lived presigned URL for video_0.webm
+  app.get('/v1/artifacts/:runId/video/url', async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const accountId = request.account.accountId;
+
+    const [run] = await db
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.id, runId), eq(runs.accountId, accountId)))
+      .limit(1);
+
+    if (!run) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Run not found' } });
+    }
+
+    const url = await getR2PresignedUrl(`runs/${runId}/video_0.webm`, 3600);
+    if (!url) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Video not available' } });
+    }
+
+    return reply.send({ url });
   });
 
   // GET /v1/artifacts/:runId/video/:filename — proxy video from R2
