@@ -13,6 +13,7 @@ declare module 'fastify' {
 export async function authenticate(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   if (request.url === '/v1/health') return;
   if (request.method === 'POST' && request.url === '/v1/auth/keys') return;
+  if (request.method === 'POST' && request.url === '/v1/auth/register') return;
   if (request.url.startsWith('/v1/admin/')) return; // admin routes authenticate via x-internal-secret
   if (request.method === 'POST' && request.url === '/v1/github/webhook') return; // webhook uses hmac signature
 

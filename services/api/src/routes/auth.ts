@@ -10,6 +10,10 @@ const CreateKeyBody = z.object({
   email: z.string().email(),
 });
 
+const RegisterBody = z.object({
+  email: z.string().email(),
+});
+
 export const authRoute: FastifyPluginAsync = async (app) => {
   app.post('/v1/auth/keys', async (request, reply) => {
     const secret = process.env.INTERNAL_SERVICE_SECRET;
@@ -46,6 +50,37 @@ export const authRoute: FastifyPluginAsync = async (app) => {
       accountId: inserted.accountId,
       email: inserted.email,
       createdAt: inserted.createdAt,
+      key: rawKey,
+    });
+  });
+
+  app.post('/v1/auth/register', async (request, reply) => {
+    const parsed = RegisterBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Invalid request body' },
+      });
+    }
+
+    const { email } = parsed.data;
+    const accountId = `acc_${nanoid(16)}`;
+    const rawKey = `gk_${nanoid(32)}`;
+    const keyHash = createHash('sha256').update(rawKey).digest('hex');
+
+    const [inserted] = await db
+      .insert(apiKeys)
+      .values({ accountId, email, keyHash })
+      .returning();
+
+    if (!inserted) {
+      return reply.code(500).send({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to create account' },
+      });
+    }
+
+    return reply.code(201).send({
+      accountId: inserted.accountId,
+      email: inserted.email,
       key: rawKey,
     });
   });

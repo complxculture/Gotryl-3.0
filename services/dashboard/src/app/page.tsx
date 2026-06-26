@@ -7,9 +7,14 @@ export default function Home() {
       {/* Nav */}
       <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', borderBottom: '1px solid #e2e8f0' }}>
         <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }}>Gotryl</span>
-        <Link href="/login" style={{ background: '#2b6cb0', color: '#fff', padding: '8px 20px', borderRadius: 6, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
-          Sign in
-        </Link>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <Link href="/login" style={{ color: '#4a5568', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
+            Sign in
+          </Link>
+          <Link href="/signup" style={{ background: '#2b6cb0', color: '#fff', padding: '8px 20px', borderRadius: 6, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
+            Get started
+          </Link>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -24,8 +29,8 @@ export default function Home() {
           Describe what to test. Gotryl generates the Playwright code, runs it in the cloud, and returns screenshots, videos, and AI-diagnosed failure reports.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/login" style={{ background: '#2b6cb0', color: '#fff', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 16, fontWeight: 600 }}>
-            Get started
+          <Link href="/signup" style={{ background: '#2b6cb0', color: '#fff', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 16, fontWeight: 600 }}>
+            Get started free
           </Link>
           <a href="#how-it-works" style={{ background: '#f7fafc', color: '#2d3748', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 16, fontWeight: 500, border: '1px solid #e2e8f0' }}>
             See how it works
@@ -94,8 +99,8 @@ export default function Home() {
           <div style={{ background: '#1a202c', borderRadius: 8, padding: '16px 24px', fontFamily: 'monospace', color: '#e2e8f0', fontSize: 15, marginBottom: 28, textAlign: 'left' }}>
             <span style={{ color: '#68d391' }}>$</span> npm install -g @gotryl/cli
           </div>
-          <Link href="/login" style={{ background: '#2b6cb0', color: '#fff', padding: '12px 32px', borderRadius: 8, textDecoration: 'none', fontSize: 16, fontWeight: 600 }}>
-            Sign in to get your API key
+          <Link href="/signup" style={{ background: '#2b6cb0', color: '#fff', padding: '12px 32px', borderRadius: 8, textDecoration: 'none', fontSize: 16, fontWeight: 600 }}>
+            Get your API key
           </Link>
         </div>
       </section>
