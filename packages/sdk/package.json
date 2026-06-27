@@ -1,6 +1,7 @@
 {
   "name": "@gotryl/sdk",
   "version": "0.1.0",
+  "description": "Gotryl SDK — JS/TS client for the Gotryl cloud Playwright testing API",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,11 +11,24 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "keywords": ["gotryl", "playwright", "testing", "e2e", "ai", "cloud", "sdk"],
+  "homepage": "https://gotryl.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/complxculture/Gotryl-3.0.git",
+    "directory": "packages/sdk"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "typescript": "^5"
   }

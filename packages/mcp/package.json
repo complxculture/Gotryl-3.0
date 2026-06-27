@@ -6,8 +6,21 @@
   "bin": {
     "gotryl-mcp": "dist/index.js"
   },
+  "keywords": ["gotryl", "playwright", "testing", "e2e", "ai", "cloud", "mcp", "model-context-protocol"],
+  "homepage": "https://gotryl.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/complxculture/Gotryl-3.0.git",
+    "directory": "packages/mcp"
+  },
   "license": "Apache-2.0",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js"
