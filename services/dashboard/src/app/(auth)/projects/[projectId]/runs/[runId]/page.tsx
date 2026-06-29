@@ -33,7 +33,6 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
     try { bundle = await client.failures.getArtifacts(runId); } catch { /* no bundle */ }
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? process.env.GOTRYL_API_URL ?? 'http://localhost:3001';
   const cfg = STATUS_CONFIG[run.status] ?? STATUS_CONFIG.queued;
   const testLabel = test.description
     ? (test.description.length > 60 ? test.description.slice(0, 57) + '…' : test.description)
@@ -98,21 +97,37 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
         </div>
       )}
 
-      {/* Failure diagnosis — leads for PM */}
+      {/* Failure diagnosis */}
       {run.status === 'failed' && (
         <div style={{ border: '1px solid #fecaca', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ background: '#fef2f2', padding: '20px 24px', borderBottom: '1px solid #fecaca' }}>
+          {/* Inline screenshot — hides itself via onError if unavailable */}
+          {run.snapshotId && (
+            <div style={{ background: '#f9fafb', borderBottom: '1px solid #fecaca', lineHeight: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/artifacts/${runId}/screenshot/0`}
+                alt="Browser screenshot at point of failure"
+                style={{ width: '100%', maxHeight: 320, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
+          )}
+          {/* Root cause */}
+          <div style={{ background: '#fef2f2', padding: '20px 24px', borderBottom: bundle?.whatToDoNext ? '1px solid #fecaca' : 'none' }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#991b1b', margin: '0 0 8px' }}>What went wrong</h2>
-            {bundle?.rootCauseHypothesis ? (
-              <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
-                {bundle.rootCauseHypothesis}
-              </p>
-            ) : (
-              <p style={{ margin: 0, fontSize: 15, color: '#6b7280', lineHeight: 1.65 }}>
-                The test failed but no AI diagnosis is available for this run. Check the technical details below.
-              </p>
-            )}
+            <p style={{ margin: 0, fontSize: 15, color: '#1f2937', lineHeight: 1.65 }}>
+              {bundle?.rootCauseHypothesis || 'The test did not complete. Try re-running — if it keeps failing, check that your app is live at the target URL.'}
+            </p>
           </div>
+          {/* What to do next */}
+          {bundle?.whatToDoNext && (
+            <div style={{ background: '#fff', padding: '20px 24px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>What to do next</h2>
+              <p style={{ margin: 0, fontSize: 15, color: '#374151', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                {bundle.whatToDoNext}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -126,15 +141,6 @@ export default async function RunDetailPage({ params }: { params: { projectId: s
           >
             ▶ Watch browser recording
           </a>
-          {run.snapshotId && (
-            <a
-              href={`${apiBase}/v1/artifacts/${runId}/steps/0/screenshot`}
-              target="_blank" rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 12, background: '#f3f4f6', color: '#374151', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}
-            >
-              View screenshot
-            </a>
-          )}
         </div>
       )}
 

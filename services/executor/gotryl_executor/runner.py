@@ -170,6 +170,7 @@ def run_test(run_id: str, test_code: str | None, test_description: str, target_u
                         stderr=stderr,
                         failing_line_no=bundle.get('failingStep', {}).get('lineNo', 0),
                         dom_snapshot=bundle.get('domSnapshot', ''),
+                        target_url=target_url,
                     )
                     if analysis:
                         bundle.update(analysis)

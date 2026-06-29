@@ -51,4 +51,5 @@ export interface FailureBundle {
     file: string;
     lineRange: [number, number];
   };
+  whatToDoNext?: string;
 }
