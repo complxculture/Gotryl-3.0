@@ -4,18 +4,7 @@ import { db } from '../db/client.js';
 import { runs, tests } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { runQueue } from '../queue/client.js';
-
-const PRIVATE_IP_RE =
-  /^(localhost|0\.0\.0\.0|127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$|\[::1\]|fe80:|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:)/i;
-
-function isPrivateUrl(rawUrl: string): boolean {
-  try {
-    const { hostname } = new URL(rawUrl);
-    return PRIVATE_IP_RE.test(hostname);
-  } catch {
-    return true;
-  }
-}
+import { isPrivateUrl } from '../lib/url.js';
 
 const CreateRunBody = z.object({
   testId: z.string().min(1),

@@ -6,6 +6,7 @@ import { db } from '../db/client.js';
 import { githubIntegrations, tests, runs } from '../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { runQueue } from '../queue/client.js';
+import { isPrivateUrl } from '../lib/url.js';
 
 function getGitHubApp(): App | null {
   const appId = process.env.GITHUB_APP_ID;
@@ -58,7 +59,9 @@ const CreateIntegrationBody = z.object({
   projectId: z.string().min(1),
   repoFullName: z.string().regex(/^[\w.-]+\/[\w.-]+$/, 'Must be in "owner/repo" format'),
   installationId: z.string().min(1),
-  targetUrl: z.string().url(),
+  targetUrl: z.string().url()
+    .refine((u) => u.startsWith('https://'), { message: 'Target URL must use HTTPS' })
+    .refine((u) => !isPrivateUrl(u), { message: 'Target URL must not resolve to a private or loopback address' }),
 });
 
 export const githubRoute: FastifyPluginAsync = async (app) => {
@@ -84,10 +87,14 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
 
     try {
       const [existing] = await db
-        .select({ id: githubIntegrations.id })
+        .select({ id: githubIntegrations.id, accountId: githubIntegrations.accountId })
         .from(githubIntegrations)
         .where(eq(githubIntegrations.projectId, projectId))
         .limit(1);
+
+      if (existing && existing.accountId !== accountId) {
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Forbidden' } });
+      }
 
       let integration;
       let statusCode: 200 | 201;
@@ -95,7 +102,7 @@ export const githubRoute: FastifyPluginAsync = async (app) => {
         [integration] = await db
           .update(githubIntegrations)
           .set({ repoFullName, installationId, targetUrl, updatedAt: new Date() })
-          .where(eq(githubIntegrations.id, existing.id))
+          .where(and(eq(githubIntegrations.id, existing.id), eq(githubIntegrations.accountId, accountId)))
           .returning();
         statusCode = 200;
       } else {

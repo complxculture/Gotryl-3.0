@@ -154,7 +154,8 @@ export const failuresRoute: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'DOM snapshot not available' } });
     }
 
-    reply.header('Content-Type', 'text/html; charset=utf-8');
+    reply.header('Content-Type', 'text/plain; charset=utf-8');
+    reply.header('Content-Disposition', 'attachment; filename="dom.html"');
     reply.header('Cache-Control', 'public, max-age=3600');
     return reply.send(stream.body);
   });

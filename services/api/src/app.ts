@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import { healthRoute } from './routes/health.js';
 import { authRoute } from './routes/auth.js';
 import { projectsRoute } from './routes/projects.js';
@@ -23,6 +24,14 @@ export async function buildApp() {
   }
 
   const app = Fastify({ logger: true });
+
+  const allowedOrigin = process.env.DASHBOARD_URL ?? 'https://app.gotryl.com';
+  await app.register(cors, {
+    origin: allowedOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
 
   app.addHook('onRequest', authenticate);
 
