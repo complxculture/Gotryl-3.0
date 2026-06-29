@@ -1,255 +1,557 @@
 import Link from 'next/link';
+import {
+  TerminalWindowIcon,
+  CloudIcon,
+  CodeIcon,
+  BracketsAngleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowRightIcon,
+  GithubLogoIcon,
+  DiscordLogoIcon,
+} from '@phosphor-icons/react/dist/ssr';
 import LandingNav from './LandingNav';
+import LandingHero from './LandingHero';
+import ScrollReveal from './ScrollReveal';
 
-const BLUE = '#2563eb';
-const DARK = '#0f172a';
-const TEXT = '#111827';
-const MUTED = '#6b7280';
+const BLUE   = '#2563eb';
+const DARK   = '#0f172a';
+const DARKER = '#070d1a';
+const TEXT   = '#111827';
+const MUTED  = '#6b7280';
 const BORDER = '#e5e7eb';
-const SURFACE = '#f9fafb';
+const SURF   = '#f8fafc';
 
 export default function Home() {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', color: TEXT, background: '#fff', lineHeight: 1.5 }}>
+    <div style={{ fontFamily: 'var(--font-outfit),-apple-system,sans-serif', color: TEXT, background: '#fff', lineHeight: 1.5 }}>
 
       <LandingNav />
+      <LandingHero />
 
-      {/* ── Hero ── */}
-      <section className="hero-section" style={{ background: DARK, padding: '96px 24px 0', textAlign: 'center' }}>
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', color: '#93c5fd', fontSize: 13, fontWeight: 600, padding: '4px 14px', borderRadius: 20, marginBottom: 28 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
-            Now in early access
-          </div>
-          <h1 className="hero-h1" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-2px', color: '#fff', margin: '0 0 20px' }}>
-            Your AI QA engineer,<br />
-            <span style={{ color: '#60a5fa' }}>available via CLI</span>
-          </h1>
-          <p className="hero-subtitle" style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 36px' }}>
-            Describe what to test in plain English. Gotryl writes the Playwright code, runs it in the cloud, and tells you exactly what broke — and why.
-          </p>
-          <div className="hero-ctas" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 56 }}>
-            <Link href="/signup" style={{ background: BLUE, color: '#fff', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
-              Get started free →
-            </Link>
-            <a href="#how-it-works" style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 15, fontWeight: 500, border: '1px solid rgba(255,255,255,0.12)' }}>
-              See how it works
-            </a>
-          </div>
-        </div>
+      {/* ── Stats strip ── */}
+      <section style={{ background: '#fff', borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px' }}>
+          <div className="stats-row">
+            {[
+              { value: '<5s',    label: 'average cloud run time' },
+              { value: 'Zero',   label: 'infra to install or maintain' },
+              { value: '3 ways', label: 'CLI, REST API, and MCP server' },
+            ].map(({ value, label }) => (
+              <div
+                key={value}
+                style={{
+                  flex: 1,
+                  padding: '32px 24px',
+                  borderRight: `1px solid ${BORDER}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+                className="stat-cell"
+              >
+                <span style={{
+                  fontSize: 'clamp(28px,4vw,40px)',
+                  fontWeight: 800,
+                  letterSpacing: '-1.5px',
+                  color: TEXT,
+                  lineHeight: 1,
+                }}>
+                  {value}
+                </span>
+                <span style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>{label}</span>
+              </div>
+            ))}
 
-        {/* Terminal window */}
-        <div className="hero-terminal" style={{ maxWidth: 720, margin: '0 auto', borderRadius: '12px 12px 0 0', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', borderBottom: 'none', boxShadow: '0 -8px 40px rgba(0,0,0,0.4)' }}>
-          <div style={{ background: '#1e293b', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
-            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-            <span style={{ marginLeft: 8, fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>terminal</span>
-          </div>
-          <div style={{ background: '#0f172a', padding: '20px 24px', fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace', fontSize: 13, lineHeight: 2, color: '#e2e8f0', textAlign: 'left', overflowX: 'auto' }}>
-            <div><span style={{ color: '#4ade80' }}>$</span> <span style={{ color: '#94a3b8' }}>npm install -g @gotryl/cli</span></div>
-            <div style={{ color: '#475569' }}>added 1 package in 2s</div>
-            <div style={{ marginTop: 4 }}><span style={{ color: '#4ade80' }}>$</span> <span style={{ color: '#94a3b8' }}>gotryl setup</span></div>
-            <div style={{ color: '#475569' }}>✓ Logged in as you@company.com.</div>
-            <div style={{ marginTop: 4 }}><span style={{ color: '#4ade80' }}>$</span> <span style={{ color: '#94a3b8' }}>gotryl test create --project <span style={{ color: '#fbbf24' }}>prj_xyz</span> --description <span style={{ color: '#fbbf24' }}>"user can log in"</span></span></div>
-            <div style={{ color: '#475569' }}>Created test tst_abc456</div>
-            <div style={{ marginTop: 4 }}><span style={{ color: '#4ade80' }}>$</span> <span style={{ color: '#94a3b8' }}>gotryl test run tst_abc456 --target-url https://myapp.com --wait</span></div>
-            <div style={{ color: '#475569' }}>Generating Playwright code... Running in cloud...</div>
-            <div><span style={{ color: '#4ade80' }}>✓ Run passed</span> <span style={{ color: '#475569' }}>(3.8s)</span></div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Works with strip ── */}
-      <section style={{ borderBottom: `1px solid ${BORDER}`, padding: '18px 24px' }}>
-        <div className="works-with-strip" style={{ maxWidth: 1120, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Works with</span>
-          {['GitHub Actions', 'Claude Code', 'Cursor', 'VS Code', 'Any CI'].map((name) => (
-            <div key={name} style={{ fontSize: 13, fontWeight: 500, color: '#374151', padding: '4px 12px', background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6 }}>
-              {name}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Problem ── */}
-      <section className="section-pad" style={{ padding: '96px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>The problem</div>
-            <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.8px', margin: '0 0 14px' }}>Testing is expensive. Gotryl makes it free.</h2>
-            <p style={{ fontSize: 16, color: MUTED, maxWidth: 480, margin: '0 auto' }}>Writing Playwright tests takes hours. Maintaining them takes weeks. Gotryl eliminates both.</p>
-          </div>
-          <div className="before-after" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, borderRadius: 12, overflow: 'hidden', border: `1px solid ${BORDER}` }}>
-            <div style={{ padding: '32px 28px', background: '#fff9f9' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 18 }}>Without Gotryl</div>
-              {['Spend hours writing Playwright selectors', 'Debug flaky tests that only fail in CI', 'Set up and maintain test infrastructure', 'Guess what caused a failure from a stack trace', 'Tests break whenever the UI changes'].map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12, fontSize: 14, color: '#374151' }}>
-                  <span style={{ color: '#ef4444', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✕</span>
-                  {item}
-                </div>
-              ))}
-            </div>
-            <div style={{ padding: '32px 28px', background: '#f0fdf4' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 18 }}>With Gotryl</div>
-              {['Describe what to test in plain English', 'Tests run reliably in isolated cloud containers', 'Zero infrastructure — no Playwright install needed', 'AI explains exactly what failed and why', 'Re-generate tests with one command'].map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12, fontSize: 14, color: '#374151' }}>
-                  <span style={{ color: '#16a34a', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
-                  {item}
-                </div>
-              ))}
+            {/* Works with */}
+            <div
+              style={{
+                flex: 2,
+                padding: '32px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+              className="works-with-cell"
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Works with
+              </span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['GitHub Actions', 'Claude Code', 'Cursor', 'VS Code', 'Any CI'].map(name => (
+                  <span
+                    key={name}
+                    style={{
+                      fontSize: 12, fontWeight: 500, color: '#374151',
+                      padding: '4px 10px',
+                      background: SURF,
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 6,
+                    }}
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── How it works ── */}
-      <section id="how-it-works" className="section-pad" style={{ background: SURFACE, padding: '96px 24px', borderTop: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>How it works</div>
-            <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.8px', margin: 0 }}>From description to results in seconds</h2>
-          </div>
-          <div className="how-it-works-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-            {[
-              { n: '1', title: 'Describe the test', body: 'Write what should work in plain English — "user can sign up", "checkout flow completes", "dashboard loads data".', code: 'gotryl test create \\\n  --description "user can sign up"' },
-              { n: '2', title: 'AI writes the code', body: 'Claude generates a Playwright Python script tailored to your description and target URL. You can view and edit it any time.', code: '# Generated Playwright code\nawait page.goto(url)\nawait page.fill("#email", ...)' },
-              { n: '3', title: 'Run in the cloud', body: 'Tests execute in an isolated container with a real browser. No local Playwright, no local Node, no Docker required.', code: 'gotryl test run tst_abc \\\n  --target-url https://myapp.com' },
-              { n: '4', title: 'Get a full report', body: 'Pass or fail, you get duration, exit code, stdout. Failures include screenshots, video, and AI root-cause analysis.', code: '✓ Run passed (3.8s)\n# or\n✕ Failed — see AI diagnosis' },
-            ].map(({ n, title, body, code }) => (
-              <div key={n} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-                <div style={{ padding: '22px 22px 0' }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 6, background: BLUE, color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>{n}</div>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>{title}</h3>
-                  <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, margin: '0 0 14px' }}>{body}</p>
-                </div>
-                <div style={{ background: '#0f172a', padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: '#94a3b8', whiteSpace: 'pre', overflowX: 'auto', borderTop: `1px solid ${BORDER}` }}>{code}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Who it's for ── */}
-      <section className="section-pad" style={{ padding: '96px 24px', background: '#fff', borderTop: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Use cases</div>
-            <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.8px', margin: 0 }}>Built for every part of the dev workflow</h2>
-          </div>
-          <div className="use-cases-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-            {[
-              { label: 'Developers', title: 'Test features as you ship them', body: 'No QA team? No problem. Create a test for each feature you build. Get coverage without the overhead of maintaining a Playwright suite.', cta: 'Get started →', href: '/signup' },
-              { label: 'AI Coding Agents', title: 'Claude Code and Cursor integration', body: 'Add Gotryl as an MCP server. Your AI coding agent can write code, test it, fix failures, and ship — all in one session.', cta: 'Read MCP docs →', href: '/signup' },
-              { label: 'CI / CD', title: 'Run on every pull request', body: 'Drop our GitHub Actions workflow into your repo. Gotryl runs your full test suite on every PR and posts results as a comment.', cta: 'View example workflow →', href: 'https://github.com/complxculture/Gotryl-3.0/blob/master/examples/gotryl-ci.yml' },
-            ].map(({ label, title, body, cta, href }) => (
-              <div key={label} style={{ borderRadius: 12, border: `1px solid ${BORDER}`, padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 5, padding: '2px 8px', letterSpacing: '0.06em', alignSelf: 'flex-start', textTransform: 'uppercase' }}>{label}</span>
-                <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>{title}</h3>
-                <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0, flexGrow: 1 }}>{body}</p>
-                <a href={href} style={{ fontSize: 14, color: BLUE, textDecoration: 'none', fontWeight: 600 }}>{cta}</a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CLI + API + MCP ── */}
-      <section className="section-pad" style={{ background: SURFACE, borderTop: `1px solid ${BORDER}`, padding: '96px 24px' }}>
-        <div className="two-col" style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>CLI + API + MCP</div>
-            <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.8px', margin: '0 0 14px' }}>Three ways to use Gotryl</h2>
-            <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.7, marginBottom: 24 }}>
-              Use the CLI in your terminal, call the REST API from your code, or add the MCP server to Claude Code or Cursor.
+      <section id="how-it-works" style={{ background: '#fff', padding: '96px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <ScrollReveal style={{ textAlign: 'center', marginBottom: 56 }}>
+            <h2 style={{
+              fontSize: 'clamp(26px,3.5vw,36px)',
+              fontWeight: 800, letterSpacing: '-1px',
+              margin: '0 0 12px',
+            }}>
+              From description to results in seconds
+            </h2>
+            <p style={{ fontSize: 16, color: MUTED, maxWidth: 440, margin: '0 auto' }}>
+              No Playwright knowledge required. No infra to manage.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                { label: 'CLI', desc: 'npm install -g @gotryl/cli' },
-                { label: 'REST API', desc: 'api.gotryl.com — Bearer auth' },
-                { label: 'MCP', desc: 'npx @gotryl/mcp in IDE config' },
-              ].map(({ label, desc }) => (
-                <div key={label} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 5, padding: '2px 8px', letterSpacing: '0.06em', flexShrink: 0 }}>{label}</span>
-                  <code style={{ fontSize: 13, color: '#374151', fontFamily: 'monospace' }}>{desc}</code>
+          </ScrollReveal>
+
+          <div className="steps-grid">
+            {[
+              {
+                n: '01',
+                icon: <TerminalWindowIcon size={20} weight="duotone" color={BLUE} />,
+                title: 'Describe the test',
+                body: 'Write what should work in plain English. "User can sign up", "checkout completes", "dashboard loads data".',
+                code: 'gotryl test create \\\n  --description "user can sign up"',
+                delay: 0,
+              },
+              {
+                n: '02',
+                icon: <BracketsAngleIcon size={20} weight="duotone" color={BLUE} />,
+                title: 'AI writes the code',
+                body: 'Claude generates a Playwright script for your description and target URL. View or edit it any time.',
+                code: '# Generated for you\nawait page.goto(url)\nawait page.fill("#email",\n  "test@example.com")',
+                delay: 0.08,
+              },
+              {
+                n: '03',
+                icon: <CloudIcon size={20} weight="duotone" color={BLUE} />,
+                title: 'Run in the cloud',
+                body: 'Tests execute in isolated containers with real Chrome. No local Node, no Docker, no Playwright install.',
+                code: 'gotryl test run tst_abc \\\n  --target https://myapp.com \\\n  --wait',
+                delay: 0.16,
+              },
+              {
+                n: '04',
+                icon: <CheckCircleIcon size={20} weight="duotone" color={BLUE} />,
+                title: 'Get plain-English results',
+                body: 'Pass or fail, you get duration and exit code. Failures include a screenshot, video, and AI root-cause diagnosis.',
+                code: '✓ Run passed (3.8s)\n# or\n✕ Failed — AI diagnosis:\n  "Submit button not found"',
+                delay: 0.24,
+              },
+            ].map(({ n, icon, title, body, code, delay }) => (
+              <ScrollReveal key={n} delay={delay}>
+                <div style={{
+                  background: '#fff',
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  <div style={{ padding: '22px 22px 0' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
+                    }}>
+                      <span style={{
+                        width: 28, height: 28, borderRadius: 7,
+                        background: '#eff6ff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        {icon}
+                      </span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: '#94a3b8',
+                        fontFamily: 'var(--font-plex),monospace',
+                        letterSpacing: '0.06em',
+                      }}>
+                        {n}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 8px', color: TEXT }}>{title}</h3>
+                    <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, margin: '0 0 16px' }}>{body}</p>
+                  </div>
+                  <div style={{
+                    background: DARK, padding: '12px 16px',
+                    fontFamily: 'var(--font-plex),"JetBrains Mono",monospace',
+                    fontSize: 12, color: '#94a3b8',
+                    whiteSpace: 'pre', overflowX: 'auto',
+                    borderTop: `1px solid ${BORDER}`,
+                    flexGrow: 1,
+                    lineHeight: 1.75,
+                  }}>
+                    {code}
+                  </div>
                 </div>
-              ))}
-            </div>
+              </ScrollReveal>
+            ))}
           </div>
-          <div style={{ background: '#0f172a', borderRadius: 12, padding: '20px 24px', border: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
-            <div style={{ fontSize: 11, color: '#4ade80', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.06em', marginBottom: 14 }}>MCP CONFIG — .claude/settings.json</div>
-            <pre style={{ margin: 0, fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: 12, lineHeight: 1.8, color: '#e2e8f0', overflowX: 'auto' }}>{`{
-  "mcpServers": {
-    "gotryl": {
-      "command": "npx",
-      "args": ["-y", "@gotryl/mcp"],
-      "env": {
-        "GOTRYL_API_KEY": "gk_..."
-      }
-    }
-  }
-}`}</pre>
+        </div>
+      </section>
+
+      {/* ── AI Diagnosis feature (key differentiator) ── */}
+      <section style={{ background: SURF, padding: '96px 24px', borderTop: `1px solid ${BORDER}` }}>
+        <div className="diagnosis-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+          <ScrollReveal>
+            <div style={{ maxWidth: 460 }}>
+              <h2 style={{
+                fontSize: 'clamp(26px,3.5vw,36px)',
+                fontWeight: 800, letterSpacing: '-1px',
+                margin: '0 0 16px',
+              }}>
+                When tests fail, you know exactly why
+              </h2>
+              <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.72, margin: '0 0 28px' }}>
+                Stack traces tell you where. Gotryl tells you what actually broke and what to do about it, in plain English.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[
+                  { icon: <XCircleIcon size={16} color="#ef4444" weight="fill" />, text: 'No more guessing from a 40-line stack trace' },
+                  { icon: <CheckCircleIcon size={16} color="#22c55e" weight="fill" />, text: 'Root cause identified in the run report' },
+                  { icon: <CheckCircleIcon size={16} color="#22c55e" weight="fill" />, text: 'One-command fix: --regenerate updates the script' },
+                ].map(({ icon, text }, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{ flexShrink: 0, marginTop: 2 }}>{icon}</span>
+                    <span style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* Diagnosis result card */}
+          <ScrollReveal delay={0.12}>
+            <div style={{
+              background: '#fff',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+            }}>
+              {/* Card header */}
+              <div style={{
+                padding: '14px 20px',
+                borderBottom: `1px solid ${BORDER}`,
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  background: '#fef2f2', border: '1px solid #fecaca',
+                  color: '#dc2626',
+                  fontSize: 11, fontWeight: 700,
+                  padding: '3px 9px', borderRadius: 5,
+                  letterSpacing: '0.04em',
+                }}>
+                  <span style={{
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: '#ef4444', display: 'inline-block',
+                  }} />
+                  FAILED
+                </span>
+                <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                  tst_9qx - User can sign up
+                </span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: 12,
+                  color: MUTED,
+                  fontFamily: 'var(--font-plex),monospace',
+                }}>
+                  2.1s
+                </span>
+              </div>
+
+              {/* Diagnosis body */}
+              <div style={{ padding: '20px' }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: MUTED,
+                  letterSpacing: '0.07em', textTransform: 'uppercase',
+                  marginBottom: 8,
+                }}>
+                  What happened
+                </div>
+                <p style={{ fontSize: 14, color: TEXT, lineHeight: 1.65, margin: '0 0 20px' }}>
+                  The "Create Account" button was not found on the page. The signup
+                  form appears to have changed its primary CTA label from "Create Account"
+                  to "Get started."
+                </p>
+
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: MUTED,
+                  letterSpacing: '0.07em', textTransform: 'uppercase',
+                  marginBottom: 8,
+                }}>
+                  What to do
+                </div>
+                <div style={{
+                  background: SURF,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  fontFamily: 'var(--font-plex),monospace',
+                  fontSize: 12, color: '#374151',
+                  marginBottom: 20,
+                }}>
+                  gotryl test run tst_9qx --regenerate
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Link href="/signup" style={{
+                    fontSize: 13, fontWeight: 600, color: '#fff',
+                    background: BLUE, padding: '8px 16px',
+                    borderRadius: 7, textDecoration: 'none',
+                  }}>
+                    Regenerate test
+                  </Link>
+                  <a href="#how-it-works" style={{
+                    fontSize: 13, fontWeight: 500, color: '#374151',
+                    background: SURF, padding: '8px 16px',
+                    borderRadius: 7, textDecoration: 'none',
+                    border: `1px solid ${BORDER}`,
+                  }}>
+                    View Playwright code
+                  </a>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ── Integration modes ── */}
+      <section style={{ background: '#fff', padding: '96px 24px', borderTop: `1px solid ${BORDER}` }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <ScrollReveal style={{ textAlign: 'center', marginBottom: 56 }}>
+            <h2 style={{
+              fontSize: 'clamp(26px,3.5vw,36px)',
+              fontWeight: 800, letterSpacing: '-1px',
+              margin: '0 0 12px',
+            }}>
+              Three ways to use Gotryl
+            </h2>
+            <p style={{ fontSize: 16, color: MUTED, maxWidth: 400, margin: '0 auto' }}>
+              Terminal, code, or inside your AI coding agent.
+            </p>
+          </ScrollReveal>
+
+          <div className="integration-grid">
+            {[
+              {
+                icon: <TerminalWindowIcon size={22} weight="duotone" color={BLUE} />,
+                label: 'CLI',
+                title: 'From your terminal',
+                body: 'Install once, run anywhere. Works in any shell, local or CI.',
+                code: `npm install -g @gotryl/cli\ngotryl setup\ngotryl test run tst_abc --wait`,
+                delay: 0,
+              },
+              {
+                icon: <CodeIcon size={22} weight="duotone" color={BLUE} />,
+                label: 'REST API',
+                title: 'From your code',
+                body: 'Call the Gotryl API directly from any language. Bearer token auth.',
+                code: `curl -X POST https://api.gotryl.com/v1/runs \\\n  -H "Authorization: Bearer gk_..." \\\n  -d '{"test_id":"tst_abc","target_url":"..."}'`,
+                delay: 0.1,
+              },
+              {
+                icon: <BracketsAngleIcon size={22} weight="duotone" color={BLUE} />,
+                label: 'MCP',
+                title: 'Inside Claude Code or Cursor',
+                body: 'Add Gotryl as an MCP server. Your AI agent writes code, tests it, and fixes failures in one session.',
+                code: `// .claude/settings.json\n{\n  "mcpServers": {\n    "gotryl": {\n      "command": "npx",\n      "args": ["-y", "@gotryl/mcp"],\n      "env": { "GOTRYL_API_KEY": "gk_..." }\n    }\n  }\n}`,
+                delay: 0.2,
+              },
+            ].map(({ icon, label, title, body, code, delay }) => (
+              <ScrollReveal key={label} delay={delay}>
+                <div style={{
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}>
+                  <div style={{ padding: '24px 24px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                      <span style={{
+                        width: 36, height: 36, borderRadius: 9,
+                        background: '#eff6ff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        {icon}
+                      </span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: BLUE,
+                        background: '#eff6ff', border: '1px solid #bfdbfe',
+                        padding: '2px 8px', borderRadius: 5,
+                        letterSpacing: '0.06em',
+                      }}>
+                        {label}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px', color: TEXT }}>{title}</h3>
+                    <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, margin: '0 0 16px' }}>{body}</p>
+                  </div>
+                  <div style={{
+                    background: DARK,
+                    padding: '14px 16px',
+                    fontFamily: 'var(--font-plex),"JetBrains Mono",monospace',
+                    fontSize: 11.5, color: '#94a3b8',
+                    whiteSpace: 'pre', overflowX: 'auto',
+                    borderTop: `1px solid ${BORDER}`,
+                    lineHeight: 1.8,
+                    flexGrow: 1,
+                  }}>
+                    {code}
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="section-pad" style={{ background: DARK, padding: '96px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', color: '#fff', margin: '0 0 14px' }}>Start testing in minutes</h2>
-          <p style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.7, marginBottom: 32 }}>
-            Free to try. No credit card. No infra to set up.
-          </p>
-          <div className="cta-btns" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/signup" style={{ background: BLUE, color: '#fff', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700 }}>
-              Create free account →
-            </Link>
-            <a href="https://github.com/complxculture/Gotryl-3.0" style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontSize: 15, fontWeight: 500, border: '1px solid rgba(255,255,255,0.12)' }}>
-              View on GitHub
-            </a>
-          </div>
+      <section style={{ background: DARK, padding: '96px 24px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+          <ScrollReveal>
+            <h2 style={{
+              fontSize: 'clamp(28px,4vw,40px)',
+              fontWeight: 800,
+              letterSpacing: '-1.5px',
+              color: '#f8fafc',
+              margin: '0 0 14px',
+            }}>
+              Start testing in minutes
+            </h2>
+            <p style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.7, marginBottom: 36 }}>
+              Free to try. No credit card. No infra to set up.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/signup" style={{
+                background: BLUE, color: '#fff',
+                padding: '13px 32px', borderRadius: 8,
+                textDecoration: 'none', fontSize: 15, fontWeight: 700,
+                display: 'inline-block',
+              }}>
+                Create free account
+              </Link>
+              <a
+                href="https://github.com/complxculture/Gotryl-3.0"
+                style={{
+                  background: 'rgba(255,255,255,0.08)', color: '#e2e8f0',
+                  padding: '13px 24px', borderRadius: 8,
+                  textDecoration: 'none', fontSize: 15, fontWeight: 500,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                }}
+              >
+                <GithubLogoIcon size={16} />
+                View on GitHub
+              </a>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer style={{ background: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="footer-inner" style={{ maxWidth: 1120, margin: '0 auto', padding: '48px 24px 32px' }}>
+      <footer style={{ background: DARKER, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 24px 32px' }}>
           <div className="grid-footer" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 32, marginBottom: 40 }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Gotryl</div>
-              <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 14px', maxWidth: 200 }}>AI-powered cloud testing. Describe what to test — we run it.</p>
-              <div style={{ display: 'flex', gap: 16 }}>
-                <a href="https://github.com/complxculture/Gotryl-3.0" style={{ fontSize: 13, color: '#3b82f6', textDecoration: 'none' }}>GitHub →</a>
-                <a href="https://discord.gg/yFnTYU3Hqr" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#3b82f6', textDecoration: 'none' }}>Discord →</a>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', marginBottom: 10 }}>Gotryl</div>
+              <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 16px', maxWidth: 200 }}>
+                AI-powered cloud testing. Describe what to test, we run it.
+              </p>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <a
+                  href="https://github.com/complxculture/Gotryl-3.0"
+                  style={{ color: '#3b82f6', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}
+                >
+                  <GithubLogoIcon size={14} /> GitHub
+                </a>
+                <a
+                  href="https://discord.gg/yFnTYU3Hqr"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: '#3b82f6', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}
+                >
+                  <DiscordLogoIcon size={14} /> Discord
+                </a>
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>Product</div>
-              {['Dashboard', 'CLI', 'MCP Server', 'REST API', 'GitHub Actions'].map((item) => (
-                <div key={item} style={{ marginBottom: 10 }}>
-                  <a href="/signup" style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>{item}</a>
+
+            {[
+              {
+                heading: 'Product',
+                links: [
+                  { label: 'Dashboard', href: '/signup' },
+                  { label: 'CLI', href: '/signup' },
+                  { label: 'MCP Server', href: '/signup' },
+                  { label: 'REST API', href: '/signup' },
+                  { label: 'GitHub Actions', href: '/signup' },
+                ],
+              },
+              {
+                heading: 'Developers',
+                links: [
+                  { label: 'Documentation', href: 'https://github.com/complxculture/Gotryl-3.0#readme' },
+                  { label: 'Quickstart', href: '/signup' },
+                  { label: 'GitHub', href: 'https://github.com/complxculture/Gotryl-3.0' },
+                  { label: 'Changelog', href: 'https://github.com/complxculture/Gotryl-3.0/commits/master' },
+                ],
+              },
+              {
+                heading: 'Account',
+                links: [
+                  { label: 'Sign in', href: '/login' },
+                  { label: 'Create account', href: '/signup' },
+                  { label: 'API Keys', href: '/settings/keys' },
+                ],
+              },
+            ].map(({ heading, links }) => (
+              <div key={heading}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: '#64748b',
+                  letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14,
+                }}>
+                  {heading}
                 </div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>Developers</div>
-              {[{ label: 'Documentation', href: 'https://github.com/complxculture/Gotryl-3.0#readme' }, { label: 'Quickstart', href: '/signup' }, { label: 'GitHub', href: 'https://github.com/complxculture/Gotryl-3.0' }, { label: 'Changelog', href: 'https://github.com/complxculture/Gotryl-3.0/commits/master' }].map(({ label, href }) => (
-                <div key={label} style={{ marginBottom: 10 }}>
-                  <a href={href} style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>{label}</a>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>Account</div>
-              {[{ label: 'Sign in', href: '/login' }, { label: 'Create account', href: '/signup' }, { label: 'API Keys', href: '/settings/keys' }].map(({ label, href }) => (
-                <div key={label} style={{ marginBottom: 10 }}>
-                  <a href={href} style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>{label}</a>
-                </div>
-              ))}
-            </div>
+                {links.map(({ label, href }) => (
+                  <div key={label} style={{ marginBottom: 10 }}>
+                    <a href={href} style={{ fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>{label}</a>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
-          <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} Gotryl. All rights reserved.</span>
+
+          <div
+            className="footer-bottom"
+            style={{
+              borderTop: '1px solid rgba(255,255,255,0.05)',
+              paddingTop: 20,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#475569' }}>
+              &copy; {new Date().getFullYear()} Gotryl. All rights reserved.
+            </span>
             <div style={{ display: 'flex', gap: 16 }}>
               <a href="/privacy" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Privacy</a>
               <a href="/terms" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Terms</a>

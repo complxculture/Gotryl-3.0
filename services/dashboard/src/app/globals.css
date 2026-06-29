@@ -2,11 +2,47 @@
 body { margin: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
 /* ── ANIMATIONS ── */
-@keyframes blink      { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-@keyframes blink-slow { 0%, 49%  { opacity: 1; } 50%, 99% { opacity: 0; } }
-@keyframes pulse      { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes blink        { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes blink-slow   { 0%, 49%  { opacity: 1; } 50%, 99% { opacity: 0; } }
+@keyframes pulse        { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-.status-dot { animation: blink-slow 2s infinite; }
+.status-dot    { animation: blink-slow 2s infinite; }
+.terminal-cursor { animation: cursor-blink 1s step-end infinite; display: inline-block; }
+
+/* ── Landing redesign layout ── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.stats-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.stat-cell:last-child { border-right: none !important; }
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.diagnosis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
+}
+
+.integration-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
 
 /* ── Landing nav ── */
 .nav-desktop-links { display: flex; align-items: center; gap: 28px; }
@@ -28,7 +64,24 @@ body { margin: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 .table-scroll table { min-width: 600px; }
 
 /* ── Landing responsive ── */
+@media (max-width: 1024px) {
+  .steps-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
 @media (max-width: 768px) {
+  /* Hero */
+  .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+
+  /* Stats */
+  .stats-row { flex-direction: column !important; }
+  .stat-cell { border-right: none !important; border-bottom: 1px solid #e5e7eb; }
+  .works-with-cell { border-top: 1px solid #e5e7eb; }
+
+  /* Steps / Diagnosis / Integration */
+  .steps-grid       { grid-template-columns: 1fr !important; }
+  .diagnosis-grid   { grid-template-columns: 1fr !important; gap: 40px !important; }
+  .integration-grid { grid-template-columns: 1fr !important; }
+
   /* Nav */
   .nav-desktop-links { display: none !important; }
   .nav-desktop-ctas  { display: none !important; }
