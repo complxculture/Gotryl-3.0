@@ -86,6 +86,8 @@ services:
       GOTRYL_API_URL: http://api:3001
       NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
       PORT: 3000
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
     depends_on:
       - api
 
